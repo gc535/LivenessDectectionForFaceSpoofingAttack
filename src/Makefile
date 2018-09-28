@@ -1,0 +1,24 @@
+PROJECT_HOME=..
+CXX = g++
+IDIR=.
+CFLAGS = -O2 -std=c++11 -I$(IDIR)
+
+OPENCV_PATH=/usr/local/lib
+LIBFLAGS = -L${OPENCV_PATH} -lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_ml
+
+BIN = ${PROJECT_HOME}/bin/main
+ODIR=obj
+
+_SRCS = $(wildcard *.cpp) 
+_OBJS = $(_SRCS:.cpp=.o)
+OBJS = $(patsubst %, $(ODIR)/%,$(_OBJS))
+
+$(ODIR)/%.o: %.cpp
+	$(CXX) -c -g -o $@ $< $(CFLAGS)
+
+$(BIN): $(OBJS)
+	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS) 
+
+clean:
+	rm -f $(BIN) ./obj/*.o
+
