@@ -28,3 +28,26 @@ int getFileList (const string& dirPath, vector<string>& files)
     closedir(dp);
     return 0;
 }
+
+
+void ProgressBar(float precent)
+{
+    
+    if (precent <= 1.0) {
+        int barWidth = 70;
+
+        std::cout << "[";
+        int pos = barWidth * precent;
+        for (int i = 0; i < barWidth; ++i) {
+            if (i < pos) std::cout << "=";
+            else if (i == pos) std::cout << ">";
+            else std::cout << " ";
+        }
+        std::cout << "] " << int(precent * 100.0) << " %\r";
+        std::cout.flush();
+
+        //precent += 0.16; // for demonstration only
+    }
+    std::cout << std::endl;
+
+}

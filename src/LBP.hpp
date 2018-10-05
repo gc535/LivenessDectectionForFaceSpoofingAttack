@@ -63,7 +63,7 @@ public:
 
     /* merge row of two matrix */
     cv::Mat mergeRows(const cv::Mat& A, const cv::Mat& B);
-
+    cv::Mat mergeCols(const cv::Mat& A, const cv::Mat& B);
 private:
     /* find (min) rotation invariant value */
     int getRI(int value256){return _minRI[value256];}   

@@ -28,3 +28,11 @@ int getFileList (const string& dirPath, vector<string>& files)
     closedir(dp);
     return 0;
 }
+
+const std::vector<cv::Mat> splitChannels(const cv::Mat& MultiChannelImage)
+{
+    CV_Assert(MultiChannelImage.channels() > 0);
+    std::vector<cv::Mat> splited_channels;
+    cv::split(MultiChannelImage, splited_channels);
+    return splited_channels;
+} 
