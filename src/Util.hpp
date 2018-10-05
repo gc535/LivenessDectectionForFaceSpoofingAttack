@@ -1,32 +1,46 @@
-#include <sys/stat.h>
-#include <dirent.h>
-#include <errno.h>
+#include <opencv2/opencv.hpp>
 #include <vector>
 #include <string>
 #include <iostream>
 
-using namespace std;
 
-int getFileList (const string& dirPath, vector<string>& files)
+
+cv::Mat mergeRows(const cv::Mat& A, const cv::Mat& B)
 {
-    DIR *dp;
-    struct dirent *filePath;
-    if((dp  = opendir(dirPath.c_str())) == NULL) {
-        cout << "Error(" << errno << ") opening " << dirPath << endl;
-        return errno;
-    }
+     int totalRows = A.rows + B.rows;
+     cv::Mat mergedDescriptors(totalRows, A.cols, A.type());
+     cv::Mat submat = mergedDescriptors.rowRange(0, A.rows);
+     A.copyTo(submat);
+     submat = mergedDescriptors.rowRange(A.rows, totalRows);
+     B.copyTo(submat);
+     return mergedDescriptors;
+}
 
-    struct stat path_stat;
-    while ((filePath = readdir(dp)) != NULL) 
+cv::Mat mergeCols(const cv::Mat& A, const cv::Mat& B)
+{
+    // If A and B both contains data, then their data type should be the same
+    // or at least one of them contains dataa
+    CV_Assert( (!A.empty() && !B.empty() && A.type()==B.type() && A.rows==B.rows)
+                || (!A.empty() || !B.empty()) );
+
+    if(!A.empty() && !B.empty())
     {
-    	stat((dirPath+string(filePath->d_name)).c_str(), &path_stat);
-    	if(S_ISREG(path_stat.st_mode))
-    	{
-    		files.push_back(string(filePath->d_name));
-    	}
+        int totalCols = A.cols + B.cols;
+        cv::Mat mergedDescriptors(A.rows, totalCols, A.type());
+        cv::Mat submat = mergedDescriptors.colRange(0, A.cols);
+        A.copyTo(submat);
+        submat = mergedDescriptors.colRange(A.cols, totalCols);
+        B.copyTo(submat);
+        return mergedDescriptors;
     }
-    closedir(dp);
-    return 0;
+    else if(!A.empty())
+    {
+        return A;
+    }
+    else
+    {
+        return B;
+    }
 }
 
 const std::vector<cv::Mat> splitChannels(const cv::Mat& MultiChannelImage)
@@ -36,3 +50,4 @@ const std::vector<cv::Mat> splitChannels(const cv::Mat& MultiChannelImage)
     cv::split(MultiChannelImage, splited_channels);
     return splited_channels;
 } 
+

@@ -61,9 +61,7 @@ public:
     void computeLBPFeatureVector_RI_Uniform(const cv::Mat &input, cv::Mat &featureVector);                              // 计算灰度不变+旋转不变+等价模式LBP特征向量(9种模式)
     void computeLBPFeatureVector_RI_Uniform(const cv::Mat &input, cv::Mat &featureVector, cv::Size cellSize); // 计算灰度不变+旋转不变+等价模式LBP特征向量(9种模式)
 
-    /* merge row of two matrix */
-    cv::Mat mergeRows(const cv::Mat& A, const cv::Mat& B);
-    cv::Mat mergeCols(const cv::Mat& A, const cv::Mat& B);
+
 private:
     /* find (min) rotation invariant value */
     int getRI(int value256){return _minRI[value256];}   
