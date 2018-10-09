@@ -75,7 +75,7 @@ void Data::DataPreparation(cv::Mat& data, cv::Mat& label)
 			for(std::vector<std::string>::iterator it = _filelist.begin(); it != _filelist.end(); ++it)
 			{
 				srcImg = cv::imread(_dirPath+*it, cv::IMREAD_COLOR);
-				cv::resize(srcImg, resizedImg, cv::Size(resize_row, resize_col));
+				cv::resize(srcImg, resizedImg, cv::Size(resize_col, resize_row));
 				cv::Mat sample_hist_vector;
 
 				/* prepare data feature vector */
@@ -86,7 +86,8 @@ void Data::DataPreparation(cv::Mat& data, cv::Mat& label)
 				for(std::vector<cv::Mat>::const_iterator channel = hsv_channels.begin(); channel != hsv_channels.end(); ++channel)
 				{
 					cv::Mat channel_lbp_hist;
-					lbp_helper.computeLBPFeatureVector_RI_Uniform(*channel, channel_lbp_hist);
+					lbp_helper.computeLBPFeatureVector(*channel, channel_lbp_hist, LBP::Mode::RIU2);
+					//lbp_helper.computeLBPFeatureVector_RI_Uniform(*channel, channel_lbp_hist);
 					sample_hist_vector = mergeCols(sample_hist_vector, channel_lbp_hist);
 				}
 
@@ -97,7 +98,8 @@ void Data::DataPreparation(cv::Mat& data, cv::Mat& label)
 				for(std::vector<cv::Mat>::const_iterator channel = ycbcr_channels.begin(); channel != ycbcr_channels.end(); ++channel)
 				{
 					cv::Mat channel_lbp_hist;
-					lbp_helper.computeLBPFeatureVector_RI_Uniform(*channel, channel_lbp_hist);
+					lbp_helper.computeLBPFeatureVector(*channel, channel_lbp_hist, LBP::Mode::RIU2);  //LBP::Mode::RIU2
+					//lbp_helper.computeLBPFeatureVector_RI_Uniform(*channel, channel_lbp_hist);
 					sample_hist_vector = mergeCols(sample_hist_vector, channel_lbp_hist);
 				}
 				// push back sample
