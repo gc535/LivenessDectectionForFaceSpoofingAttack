@@ -11,10 +11,19 @@ using namespace std;
 class LBP
 {
 
+public: 
+    enum Mode
+    {
+        BASIC,
+        RIU1,
+        RIU2
+    };
+
 private: 
     int _rows;
     int _cols;
     cv::Size _cellSize;
+    const int _binNum[3] = {256, 58, 9};
 
     const int _minRI[256] = {
         0, 1, 1, 3, 1, 5, 3, 7, 1, 9, 5, 11, 3, 13, 7, 15, 1, 17, 9, 19, 5, 21, 11, 23, 
@@ -48,18 +57,13 @@ public:
     LBP(cv::Size cellSize=cv::Size(16, 16)): _cellSize(cellSize){}
     LBP(int size_x, int size_y, cv::Size cellSize=cv::Size(16, 16)): _rows(size_y), _cols(size_x), _cellSize(cellSize){}
 
-    /* 计算LBP特征图 */
-    void computeLBPImage_256(const cv::Mat &srcImage, cv::Mat &LBPImage);         // 计算256维基本LBP特征图
-    void computeLBPImage_Uniform(const cv::Mat &srcImage, cv::Mat &LBPImage);     // 计算等价模式LBP特征图(58种模式)
-    void computeLBPImage_RI_Uniform(const cv::Mat &srcImage, cv::Mat &LBPImage);  // 计算灰度不变+旋转不变+等价模式LBP特征图(9种模式)
+    /* calculate LBP image with mode */
+    void computeLBPImage(const cv::Mat &srcImage, cv::Mat &LBPImage, Mode mode);         
     
-    /* 计算LBP特征向量 */
-    void computeLBPFeatureVector_256(const cv::Mat &srcImage, cv::Mat &featureVector);                                  // 计算基本的256维LBP特征向量
-    void computeLBPFeatureVector_256(const cv::Mat &srcImage, cv::Mat &featureVector, cv::Size cellSize);     // 计算基本的256维LBP特征向量
-    void computeLBPFeatureVector_Uniform(const cv::Mat &srcImage, cv::Mat &featureVector);                              // 计算灰度不变+等价模式LBP特征向量(58种模式)
-    void computeLBPFeatureVector_Uniform(const cv::Mat &srcImage, cv::Mat &featureVector, cv::Size cellSize); // 计算灰度不变+等价模式LBP特征向量(58种模式)
-    void computeLBPFeatureVector_RI_Uniform(const cv::Mat &input, cv::Mat &featureVector);                              // 计算灰度不变+旋转不变+等价模式LBP特征向量(9种模式)
-    void computeLBPFeatureVector_RI_Uniform(const cv::Mat &input, cv::Mat &featureVector, cv::Size cellSize); // 计算灰度不变+旋转不变+等价模式LBP特征向量(9种模式)
+    /* calculate LBP feature vector with mode */
+    void computeLBPFeatureVector(const cv::Mat &srcImage, cv::Mat &featureVector, Mode mode);                        
+    void computeLBPFeatureVector(const cv::Mat &srcImage, cv::Mat &featureVector, cv::Size cellSize, Mode mode);     // (overloading)
+    
 
 
 private:
@@ -67,7 +71,7 @@ private:
     int getRI(int value256){return _minRI[value256];}   
 
     /* find 9 rotation invariant uniform pattern */
-    int getRIUniformPattern(int value58)   
+    int getRIU2Pattern(int value58)   
     {
         int value9 = 0;
         switch (value58)
