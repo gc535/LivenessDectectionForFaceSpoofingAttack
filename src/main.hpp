@@ -6,11 +6,12 @@
 #define resize_col 96
 #define cell_size 16
 
+/*
 enum Action
 {
 	TRAIN,
 	TEST
 };
-
+*/
 
 #endif //MAIN_HPP
