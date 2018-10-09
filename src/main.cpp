@@ -20,6 +20,7 @@ int main(int argc, char** argv)
 	std::string dataDir = home+"/dataset";
 	std::string trainDir = dataDir+"/train/";
 	std::string testDir = dataDir+"/test/";
+	std::string tmpDir = dataDir+"/tmp/";
 
 	
 	// prepare train data
@@ -27,6 +28,7 @@ int main(int argc, char** argv)
 	cv::Mat train_data, train_label;
 	data.DataPreparation(train_data, train_label);
 
+	
 	data.update(testDir, Data::Action::TEST);
 	cv::Mat test_data, test_label;
 	data.DataPreparation(test_data, test_label);
