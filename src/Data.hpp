@@ -1,7 +1,7 @@
 #ifndef DATA_HPP
 #define DATA_HPP
 
-//#include <stdlib.h>
+#include <stdlib.h>
 #include <string>
 #include <vector>
 
@@ -19,12 +19,16 @@ private:
 	std::string _dirPath;
 	Action _action;
 	std::vector<std::string> _filelist;
+	int _resize;
+	int _cellsize;
 
 public: 
-	Data(const std::string path, Action action)
+	Data(const std::string path, Action action, int resize, int cellsize)
 	{
 		_dirPath = path; 
 		_action = action;
+		_resize = resize;
+		_cellsize = cellsize;
 		updateFileList();
 	}
 
@@ -34,7 +38,7 @@ public:
 	void changePath(const std::string path){_dirPath = path;}
 	void changeAction(Action action){_action = action;}
 	
-	void update(const std::string path, Action action);
+	void update(const std::string path, Action action, int resize, int cellsize);
 	
 
 private:

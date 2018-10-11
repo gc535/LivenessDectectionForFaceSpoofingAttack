@@ -6,7 +6,8 @@
 #include <ProgressBar.hpp>
 #include <Util.hpp>
 #include <Data.hpp>
-#include <main.hpp>
+
+#include <SingleChannelDOG.hpp>
 
 // util
 #include <stdlib.h>
@@ -24,7 +25,7 @@ int Data::updateFileList()
     DIR *dp;
     struct dirent *filePath;
     if((dp  = opendir(_dirPath.c_str())) == NULL) {
-        cout << "Error(" << errno << ") opening " << _dirPath << endl;
+        std::cout << "[ERROR]: Error(" << errno << ") opening " << _dirPath << std::endl;
         return errno;
     }
 
@@ -42,10 +43,12 @@ int Data::updateFileList()
     return 0;
 }
 
-void Data::update(const std::string path, Action action)
+void Data::update(const std::string path, Action action, int resize, int cellsize)
 {
 	_dirPath = path; 
 	_action = action;
+	_resize = resize;
+	_cellsize = cellsize;
 	updateFileList();
 }
 
@@ -53,7 +56,8 @@ void Data::DataPreparation(cv::Mat& data, cv::Mat& label)
 {
 	if(_filelist.size() == 0)
 	{
-		std::cout<< "ERROR: File list is empty. Data preparation aborted." << std::endl;
+		std::cout<< "[ERROR]: File list is empty. Data preparation aborted." << std::endl;
+		exit(1);
 	}
 	else
 	{   
@@ -68,27 +72,27 @@ void Data::DataPreparation(cv::Mat& data, cv::Mat& label)
 			cv::Mat resizedImg;
 
 
-			LBP lbp_helper(cv::Size(cell_size, cell_size));
+			LBP lbp_helper(cv::Size(_cellsize, _cellsize));
 			int total_ticks = _filelist.size();
 			ProgressBar progressBar(total_ticks, 70, '=', '-');
 
 			for(std::vector<std::string>::iterator it = _filelist.begin(); it != _filelist.end(); ++it)
 			{
 				srcImg = cv::imread(_dirPath+*it, cv::IMREAD_COLOR);
-				cv::resize(srcImg, resizedImg, cv::Size(resize_col, resize_row));
-				cv::Mat sample_hist_vector;
+				cv::resize(srcImg, resizedImg, cv::Size(_resize, _resize));
+				
 
-				/* prepare data feature vector */
+				/* prepare feature vector for every sample*/
+				std::vector<cv::Mat> dog_channels;
+				const std::vector<cv::Vec2d> vector_sigmas = { cv::Vec2d(0.5, 1), cv::Vec2d(1, 2), cv::Vec2d(0.5,2)};
+				
 				// hsv
 				cv::Mat hsv_image;
 				cv::cvtColor(resizedImg, hsv_image, cv::COLOR_RGB2HSV);
 				const std::vector<cv::Mat> hsv_channels = splitChannels(hsv_image);
 				for(std::vector<cv::Mat>::const_iterator channel = hsv_channels.begin(); channel != hsv_channels.end(); ++channel)
 				{
-					cv::Mat channel_lbp_hist;
-					lbp_helper.computeLBPFeatureVector(*channel, channel_lbp_hist, LBP::Mode::RIU2);
-					//lbp_helper.computeLBPFeatureVector_RI_Uniform(*channel, channel_lbp_hist);
-					sample_hist_vector = mergeCols(sample_hist_vector, channel_lbp_hist);
+					SingalChannelImageDoG(*channel, vector_sigmas, dog_channels);
 				}
 
 				// ycbcr
@@ -97,9 +101,17 @@ void Data::DataPreparation(cv::Mat& data, cv::Mat& label)
 				const std::vector<cv::Mat> ycbcr_channels = splitChannels(ycbcr_image);
 				for(std::vector<cv::Mat>::const_iterator channel = ycbcr_channels.begin(); channel != ycbcr_channels.end(); ++channel)
 				{
+					SingalChannelImageDoG(*channel, vector_sigmas, dog_channels);
+				}
+				
+				// LBP on all DOG image channels
+				//std::cout<<"dog channels nums: "<<dog_channels.size()<<std::endl;
+				cv::Mat sample_hist_vector;  
+				for(std::vector<cv::Mat>::iterator channel = dog_channels.begin(); channel != dog_channels.end(); ++channel)
+				{
+					//std::cout<<"rows: "<<sample_hist_vector.rows<<"cols: "<<sample_hist_vector.cols<<std::endl;
 					cv::Mat channel_lbp_hist;
-					lbp_helper.computeLBPFeatureVector(*channel, channel_lbp_hist, LBP::Mode::RIU2);  //LBP::Mode::RIU2
-					//lbp_helper.computeLBPFeatureVector_RI_Uniform(*channel, channel_lbp_hist);
+					lbp_helper.computeLBPFeatureVector(*channel, channel_lbp_hist, LBP::Mode::RIU2);
 					sample_hist_vector = mergeCols(sample_hist_vector, channel_lbp_hist);
 				}
 				// push back sample
