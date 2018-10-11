@@ -1,0 +1,2 @@
+This folder contains all objects file generated when making the binary in <ProjectRoot>/bin/ folder.
+This is a placeholder file for not pushing a empty directory. 
