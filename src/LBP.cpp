@@ -7,7 +7,8 @@
 void LBP::computeLBPImage(const cv::Mat &srcImage, cv::Mat &LBPImage, Mode mode)
 {
     // params check and allocate memeory
-    CV_Assert(srcImage.depth() == CV_8U&&srcImage.channels() == 1);
+    CV_Assert(srcImage.total() > 0);
+    CV_Assert(srcImage.depth() == CV_8U && srcImage.channels() == 1);
     LBPImage.create(srcImage.size(), srcImage.type());
 
     // padding the image
@@ -62,7 +63,8 @@ void LBP::computeLBPFeatureVector(const cv::Mat &srcImage, cv::Mat &featureVecto
 void LBP::computeLBPFeatureVector(const cv::Mat &srcImage, cv::Mat &featureVector, cv::Size cellSize, Mode mode)
 {
     // 参数检查，内存分配
-    CV_Assert(srcImage.depth() == CV_8U&&srcImage.channels() == 1);
+    CV_Assert(srcImage.total() > 0);
+    CV_Assert(srcImage.depth() == CV_8U && srcImage.channels() == 1);
 
     cv::Mat LBPImage;
     computeLBPImage(srcImage, LBPImage, mode);

@@ -1,4 +1,3 @@
-
 #ifndef LBP_HPP
 #define LBP_HPP
 
