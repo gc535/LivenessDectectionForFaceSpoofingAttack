@@ -16,7 +16,7 @@ $ ./main
 ```
 Then you should see four data files and one model file. Accuracy and detial will show in the command window. 
 
-Note:
+#### Note:
   1. Currently, test and train are integrated in main.cpp
   2. Current version performs DOG on all colorspace channels efore LBP feature extraction.
   3. Replacing SVM with a MLP model is currently in test. (future option)
