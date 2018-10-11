@@ -16,20 +16,48 @@ void test(cv::Mat, cv::Mat, cv::Ptr<cv::ml::SVM>);
 
 int main(int argc, char** argv)
 {
-	std::string home = std::string("..");
-	std::string dataDir = home+"/dataset";
+	int resize = 96;
+	int cellsize = 16;
+	std::string dataDir = std::string("..");
+
+	if( argc <= 2 ) {
+		printHelp();
+		exit( 1 );
+	}
+	else if( argc > 2 ) {
+		// process arguments
+		for( int i = 1; i < argc - 1; i++ ) {
+			if( strcmp( argv[i], "-d" ) == 0 ) {
+				dataDir = argv[i + 1];
+				i++;
+			}
+			else if( strcmp( argv[i], "-r" ) == 0 ) {
+				resize = atoi( argv[i + 1] );
+				i++;
+			}
+			else if( strcmp( argv[i], "-c" ) == 0 ) {
+				cellsize = atoi( argv[i + 1] );
+				i++;
+			}
+			else {
+				std::cerr << "invalid argument: \'" << argv[i] << "\'\n";
+				printHelp();
+				exit( 1 );
+			}
+		}
+	}
 	std::string trainDir = dataDir+"/train/";
 	std::string testDir = dataDir+"/test/";
 	std::string tmpDir = dataDir+"/tmp/";
 
 	
 	// prepare train data
-	Data data(trainDir, Data::Action::TRAIN);
+	Data data(trainDir, Data::Action::TRAIN, resize, cellsize);
 	cv::Mat train_data, train_label;
 	data.DataPreparation(train_data, train_label);
 
 	
-	data.update(testDir, Data::Action::TEST);
+	data.update(testDir, Data::Action::TEST, resize, cellsize);
 	cv::Mat test_data, test_label;
 	data.DataPreparation(test_data, test_label);
 
