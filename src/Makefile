@@ -1,7 +1,7 @@
 PROJECT_HOME=..
 CXX = g++
 IDIR=.
-CFLAGS = -O2 -std=c++11 -I$(IDIR)
+CFLAGS = -O0 -std=c++11 -I$(IDIR)
 
 OPENCV_PATH=/usr/local/lib
 LIBFLAGS = -L${OPENCV_PATH} -lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_ml
