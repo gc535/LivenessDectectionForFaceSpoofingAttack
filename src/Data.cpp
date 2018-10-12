@@ -6,7 +6,6 @@
 #include <ProgressBar.hpp>
 #include <Util.hpp>
 #include <Data.hpp>
-
 #include <SingleChannelDOG.hpp>
 
 // util
@@ -61,6 +60,8 @@ void Data::DataPreparation(cv::Mat& data, cv::Mat& label)
 	}
 	else
 	{   
+		const string action_name = (_action==TRAIN) ? "train" : "test";
+		std::cout<<"[NOTE]: Preparing "<<action_name<<" data..."<<std::endl;
 		std::string data_name = (_action==TRAIN) ? "TrainFeature" : "TestFeature";
 		std::string label_name = (_action==TRAIN) ? "TrainLabel" : "TestLabel";
 		
@@ -72,7 +73,8 @@ void Data::DataPreparation(cv::Mat& data, cv::Mat& label)
 			cv::Mat resizedImg;
 
 
-			LBP lbp_helper(cv::Size(_cellsize, _cellsize));
+			LBP lbp_cell(cv::Size(_cellsize, _cellsize));
+			LBP lbp_full(cv::Size(_resize, _resize));
 			int total_ticks = _filelist.size();
 			ProgressBar progressBar(total_ticks, 70, '=', '-');
 
@@ -86,6 +88,7 @@ void Data::DataPreparation(cv::Mat& data, cv::Mat& label)
 				std::vector<cv::Mat> dog_channels;
 				const std::vector<cv::Vec2d> vector_sigmas = { cv::Vec2d(0.5, 1), cv::Vec2d(1, 2), cv::Vec2d(0.5,2)};
 				
+				
 				// hsv
 				cv::Mat hsv_image;
 				cv::cvtColor(resizedImg, hsv_image, cv::COLOR_RGB2HSV);
@@ -94,7 +97,8 @@ void Data::DataPreparation(cv::Mat& data, cv::Mat& label)
 				{
 					SingalChannelImageDoG(*channel, vector_sigmas, dog_channels);
 				}
-
+				
+				
 				// ycbcr
 				cv::Mat ycbcr_image;
 				cv::cvtColor(resizedImg, ycbcr_image, cv::COLOR_RGB2YCrCb);
@@ -110,9 +114,12 @@ void Data::DataPreparation(cv::Mat& data, cv::Mat& label)
 				for(std::vector<cv::Mat>::iterator channel = dog_channels.begin(); channel != dog_channels.end(); ++channel)
 				{
 					//std::cout<<"rows: "<<sample_hist_vector.rows<<"cols: "<<sample_hist_vector.cols<<std::endl;
-					cv::Mat channel_lbp_hist;
-					lbp_helper.computeLBPFeatureVector(*channel, channel_lbp_hist, LBP::Mode::RIU2);
-					sample_hist_vector = mergeCols(sample_hist_vector, channel_lbp_hist);
+					cv::Mat channel_lbp_hist_cell;
+					lbp_cell.computeLBPFeatureVector(*channel, channel_lbp_hist_cell, LBP::Mode::RIU2);
+					sample_hist_vector = mergeCols(sample_hist_vector, channel_lbp_hist_cell);
+					cv::Mat channel_lbp_hist_full;
+					lbp_full.computeLBPFeatureVector(*channel, channel_lbp_hist_full, LBP::Mode::RIU2);
+					sample_hist_vector = mergeCols(sample_hist_vector, channel_lbp_hist_full);
 				}
 				// push back sample
 				data.push_back(sample_hist_vector);

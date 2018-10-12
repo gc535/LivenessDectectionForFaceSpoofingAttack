@@ -23,6 +23,7 @@ private:
 	int _cellsize;
 
 public: 
+	Data(){}
 	Data(const std::string path, Action action, int resize, int cellsize)
 	{
 		_dirPath = path; 
