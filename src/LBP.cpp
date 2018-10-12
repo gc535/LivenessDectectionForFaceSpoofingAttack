@@ -38,17 +38,17 @@ void LBP::computeLBPImage(const cv::Mat &srcImage, cv::Mat &LBPImage, Mode mode)
                             | ((colOfExtendedImage[0 + widthOfExtendedImage - 1] >= colOfExtendedImage[0]) << 1)
                             | ((colOfExtendedImage[0 - 1] >= colOfExtendedImage[0])                            )  );
             // mapping 
-            if(mode==BASIC)
+            if(mode==BASIC)  // basic LBP 256 bins
             {
-                colOfLBPImage[0] = LBPValue;
+                colOfLBPImage[0] = LBPValue;  
             }
-            if(mode==RIU1)
+            if(mode==RIU1)  // uniform LBP 58 bins, bin 0 not considered in the feature vector
             {
-                colOfLBPImage[0] = _uniform[_minRI[LBPValue]];
+                colOfLBPImage[0] = _uniform[LBPValue];   
             }  
-            if(mode==RIU2)
+            if(mode==RIU2)  // rotation invariant uniform LBP 58 bins, bin 0 not considered in the feature vector
             {
-                colOfLBPImage[0] = getRIU2Pattern(_uniform[_minRI[LBPValue]]);
+                colOfLBPImage[0] = getRIU2Pattern(_uniform[_minRI[LBPValue]]); 	
             }  
         }  // col      
     }// row
