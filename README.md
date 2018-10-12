@@ -29,3 +29,8 @@ update 10/09/2018:
 update 10/11/2018:
   1. Added difference of gaussian on each colorspace channel before the LBP histogram feature vector extraction. Now the accuracy is 87.47% on the current dataset.
   2. Current configuration has image resize to 96x96 and LBP cellsize of 16.
+
+update 10/12/2018:
+  1. Fixed bug in calculating uniform LBP pattern.
+  2. Added test only option in main.cpp
+  
