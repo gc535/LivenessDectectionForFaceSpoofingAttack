@@ -141,6 +141,12 @@ void Data::DataPreparation(cv::Mat& data, cv::Mat& label)
 			std::cout<<"[Note]:feature vector rows: "<<data.rows<<"  feature vector cols: "<<data.cols<<std::endl;
 			std::cout<<"[Note]:label vector rows: "<<label.rows<<"  label vector cols: "<<label.cols <<std::endl;
 
+			std::cout<<"[Note]: Saving data files..."<<std::endl;
+			//save to txt for python 
+			writeMatToFile(data,data_name+".txt");
+			writeMatToFile(label,label_name+".txt");
+
+			// save to xml
 			cv::FileStorage fs;
 			fs.open(data_name+".xml", cv::FileStorage::WRITE);
 			fs << data_name << data;

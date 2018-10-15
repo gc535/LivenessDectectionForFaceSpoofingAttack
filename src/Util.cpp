@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <unistd.h>
+#include <fstream>
 
 
 cv::Mat mergeRows(const cv::Mat& A, const cv::Mat& B)
@@ -55,4 +56,27 @@ const std::vector<cv::Mat> splitChannels(const cv::Mat& MultiChannelImage)
 bool exists (const std::string& name) 
 {
     return ( access( name.c_str(), F_OK ) != -1 );
+}
+
+// saving data to txt
+void writeMatToFile(cv::Mat& m, const std::string& filename)
+{
+    std::ofstream fout(filename.c_str());
+
+    if(!fout)
+    {
+        std::cout<<"Cannot open file:"<<filename <<std::endl;  
+        return;
+    }
+
+    for(int i=0; i<m.rows; i++)
+    {
+        for(int j=0; j<m.cols; j++)
+        {
+            fout<<m.at<float>(i,j)<<"\t";
+        }
+        fout<<std::endl;
+    }
+
+    fout.close();
 }
