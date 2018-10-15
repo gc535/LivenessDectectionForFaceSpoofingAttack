@@ -34,3 +34,7 @@ update 10/12/2018:
   1. Fixed bug in calculating uniform LBP pattern.
   2. Added test only option in main.cpp
   
+update 10/15/2018:
+  1. Added option for export processed train/test set into txt files.
+  2. Added generic python util for generating autoencoder on given feature vectors.
+  3. Start working on generic python MLP model generation. 
