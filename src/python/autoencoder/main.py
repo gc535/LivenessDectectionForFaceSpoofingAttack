@@ -11,6 +11,7 @@ import argparse
 ### util ###
 from Data_Preperation import importFromTXT, exportH5PY_featureonly
 from autoencoder import *
+sys.path.append('../')
 from Util import Monitor
 
 
@@ -61,12 +62,11 @@ test_filepath = os.path.join(srcDataDir, test_filename)
 print("[Note]: Loading processed training data from txt file to generate training set...")
 train, train_vector_len = importFromTXT(train_filepath)
 trainData = exportH5PY_featureonly(train, train_filename[:-4], cached_dataDir)
-print("[Note]: Loading complete!")
 
 print("[Note]: Loading processed testing data from txt file to generate testing set...")
 test, test_vector_len = importFromTXT(test_filepath)
 testData = exportH5PY_featureonly(test, test_filename[:-4], cached_dataDir)
-print("[Note]: Loading complete!")
+
 assert(train_vector_len == test_vector_len)
 
 print("[Note]: Generate and compile autoencoder model...")
@@ -87,7 +87,6 @@ print("[Note]: Configuring the optimizer...")
 solver_path = Solver(modelName, trainModel, testModel, output_model_dir)
 solver = caffe.get_solver(solver_path)
 
-print("[Note]: Model configuring complete!")
 print("[Note]: Start training...")
 ### training loop
 monitor = Monitor()

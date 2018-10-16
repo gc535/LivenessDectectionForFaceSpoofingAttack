@@ -10,6 +10,7 @@ import sys
 import numpy as np
 
 ### util ###
+sys.path.append('../')
 from Util import * 
 #from LBP_Feature_Extraction import *
 
