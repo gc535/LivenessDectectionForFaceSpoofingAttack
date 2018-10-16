@@ -69,14 +69,36 @@ void writeMatToFile(cv::Mat& m, const std::string& filename)
         return;
     }
 
-    for(int i=0; i<m.rows; i++)
+    switch( m.type() ) 
     {
-        for(int j=0; j<m.cols; j++)
-        {
-            fout<<m.at<float>(i,j)<<"\t";
-        }
-        fout<<std::endl;
-    }
+        case CV_32S:
+            for(int i=0; i<m.rows; i++){
+                for(int j=0; j<m.cols; j++){
+                    fout<<m.at<int>(i,j)<<"\t";
+                }fout<<std::endl;
+            }
+            break;
 
+        case CV_32F:
+            for(int i=0; i<m.rows; i++){
+                for(int j=0; j<m.cols; j++){
+                    fout<<m.at<float>(i,j)<<"\t";
+                }fout<<std::endl;
+            }
+            break;
+
+        case CV_64F:
+            for(int i=0; i<m.rows; i++){
+                for(int j=0; j<m.cols; j++){
+                    fout<<m.at<double>(i,j)<<"\t";
+                }fout<<std::endl;
+            }
+            break;
+        
+        default:
+            std::cout<<"This datatype has not been covered yet"<<std::endl;
+            CV_Assert(false);
+            break;
+    }
     fout.close();
 }
