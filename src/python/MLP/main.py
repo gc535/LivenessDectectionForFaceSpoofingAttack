@@ -1,6 +1,7 @@
 ### core dependency ###
 import cv2
 import caffe
+import h5py
 
 ### system util ###
 import os
@@ -47,52 +48,50 @@ cached_dataDir = os.path.join(os.getcwd(), 'data')
 output_model_dir = os.path.join(os.getcwd(), 'models')
 
 srcDataDir = os.path.join(os.getcwd(), "../../../bin")
-train_data_filename = "TrainFeature.txt"
-train_label_filename = "TrainLabel.txt"
-test_data_filename = "TestFeature.txt"
-test_label_filename = "TestLabel.txt"
+train_data = "train.h5"
+test_data = "test.h5"
 if args["data_directory"]:
     dataDir = args["data_directory"]
 if args["processed_train"]:
-	train_data_filename = args["processed_train"]
+	train_data = args["processed_train"]
 if args["processed_test"]:
-	test_data_filename = args["processed_test"]
-train_data_filepath = os.path.join(srcDataDir, train_data_filename)
-train_label_filepath = os.path.join(srcDataDir, train_label_filename)
-test_data_filepath = os.path.join(srcDataDir, test_data_filename)
-test_label_filepath = os.path.join(srcDataDir, test_label_filename)
-if not os.path.exists(train_data_filepath) or not os.path.exists(train_label_filepath) \
-    or not os.path.exists(test_data_filepath) or not os.path.exists(test_label_filepath):
-    print("[Error]: Expecting all processed (train/test) (data/label) file exists in the directory, but some are missing. Action aborted.")
+	test_data = args["processed_test"]
+train_data_filepath = os.path.join(srcDataDir, train_data)
+test_data_filepath = os.path.join(srcDataDir, test_data)
+train_file = h5py.File(train_data_filepath, 'r')
+test_file = h5py.File(test_data_filepath, 'r')
+train_data_len = len(train_file['data'])
+print (train_data_len)
+
+if not os.path.exists(train_data_filepath) or not os.path.exists(test_data_filepath):
+    print("[Error]: Expecting  processed train and test data file exists in the directory, but at least one is missing. Action aborted.")
     exit(1)
 
 
-### load processed data and export to H5PY
-print("[Note]: Loading processed training data from txt file to generate training set...")
-train_data, train_data_len = importFromTXT(train_data_filepath)
-train_label, train_label_len = importFromTXT(train_label_filepath)
-assert(train_data_len == train_data_len)
-trainSet = exportH5PY(train_data, train_label, train_data_filename[:-4], cached_dataDir)
+train_path_txt = os.path.join(cached_dataDir, 'train_path.txt')
+test_path_txt = os.path.join(cached_dataDir, 'test_path.txt')
+with open(train_path_txt, 'w') as f:
+    print(train_data_filepath, file=f)
+with open(test_path_txt, 'w') as f:
+    print(test_data_filepath, file=f)
 
-print("[Note]: Loading processed testing data from txt file to generate testing set...")
-test_data, test_data_len = importFromTXT(test_data_filepath)
-test_label, test_label_len = importFromTXT(test_label_filepath)
-assert(test_data_len == test_label_len)
-testSet = exportH5PY(test_data, test_label, test_data_filename[:-4], cached_dataDir)
+
 
 print("[Note]: Generate and compile autoencoder model...")
 # model path
-modelName = train_data_filename[:-4]+"_MLP"
+modelName = "MLP"
 trainModel = os.path.join(output_model_dir, modelName+'_train.prototxt')
 testModel = os.path.join(output_model_dir, modelName+'_test.prototxt')
 
 ### prepare model and sovler
-caffe.set_mode_cpu()
+#caffe.set_mode_cpu()
+caffe.set_device(0)
+caffe.set_mode_gpu()
 with open(trainModel, 'w') as f:
-    f.write(str(MLP(trainSet, train_batch_size, 'train')))
+    f.write(str(MLP(train_path_txt, train_batch_size, 'train')))
 
 with open(testModel, 'w') as f:
-    f.write(str(MLP(testSet, test_batch_size, 'test')))
+    f.write(str(MLP(test_path_txt, test_batch_size, 'test')))
 
 print("[Note]: Configuring the optimizer...")
 solver_path = Solver(modelName, trainModel, testModel, train_data_len, train_batch_size, epochs, output_model_dir)
