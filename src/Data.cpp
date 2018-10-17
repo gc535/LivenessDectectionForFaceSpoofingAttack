@@ -143,8 +143,7 @@ void Data::DataPreparation(cv::Mat& data, cv::Mat& label)
 
 			std::cout<<"[Note]: Saving data files..."<<std::endl;
 			//save to txt for python 
-			writeMatToFile(data,data_name+".txt");
-			writeMatToFile(label,label_name+".txt");
+			saveMatToHDF5(data, label, action_name);
 
 			// save to xml
 			cv::FileStorage fs;
