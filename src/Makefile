@@ -3,8 +3,9 @@ CXX = g++
 IDIR=.
 CFLAGS = -O0 -std=c++11 -I$(IDIR)
 
+#OPENCV_PATH=/usr/local/lib
 OPENCV_PATH=/usr/local/lib
-LIBFLAGS = -L${OPENCV_PATH} -lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_ml
+LIBFLAGS = -L${OPENCV_PATH} -lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_ml -lopencv_hdf
 
 BIN = ${PROJECT_HOME}/bin/main
 ODIR=obj
