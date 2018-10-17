@@ -10,5 +10,7 @@ cv::Mat mergeCols(const cv::Mat& A, const cv::Mat& B);
 const std::vector<cv::Mat> splitChannels(const cv::Mat& MultiChannelImage);
 bool exists (const std::string& name);
 void writeMatToFile(cv::Mat& m, const std::string& filename);
+void saveMatToHDF5_single(cv::Mat& input, const std::string filename, const std::string type);
+void saveMatToHDF5(cv::Mat& data, cv::Mat& label, const std::string filename);
 
 #endif //UTIL_HPP

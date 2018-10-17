@@ -1,9 +1,11 @@
 #include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
 #include <vector>
 #include <string>
 #include <iostream>
 #include <unistd.h>
 #include <fstream>
+#include <opencv2/hdf/hdf5.hpp>
 
 
 cv::Mat mergeRows(const cv::Mat& A, const cv::Mat& B)
@@ -101,4 +103,29 @@ void writeMatToFile(cv::Mat& m, const std::string& filename)
             break;
     }
     fout.close();
+}
+
+
+
+void saveMatToHDF5_single(cv::Mat& input, const std::string filename, const std::string type)
+{   
+    CV_Assert(input.rows != 0 && input.cols!= 0);
+    // open / autocreate hdf5 file
+    std::string full_filename = filename+".h5";
+    cv::Ptr<cv::hdf::HDF5> h5io = cv::hdf::open( full_filename );
+    // write / overwrite dataset
+    h5io->dswrite( input, type );
+    // release
+    h5io->close();
+}
+
+
+void saveMatToHDF5(cv::Mat& data, cv::Mat& label, const std::string filename)
+{
+    CV_Assert(data.rows != 0 && label.rows!= 0 && data.rows == label.rows);
+    std::string full_filename = filename+".h5";
+    cv::Ptr<cv::hdf::HDF5> h5io = cv::hdf::open( full_filename );
+    h5io->dswrite( data, "data" );
+    h5io->dswrite( label, "label" );
+    h5io->close();
 }
