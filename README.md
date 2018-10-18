@@ -38,3 +38,7 @@ update 10/15/2018:
   1. Added option for export processed train/test set into txt files.
   2. Added generic python util for generating autoencoder on given feature vectors.
   3. Start working on generic python MLP model generation. 
+
+update 10/17/2018:
+  1. Now data can be written into HDF5 file directly after processing.
+  2. Python MLP training can directly proceed from the C++ generated HDF5 file.
