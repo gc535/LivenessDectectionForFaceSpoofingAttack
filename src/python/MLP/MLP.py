@@ -5,8 +5,12 @@ import caffe
 import os
 
 
-def MLP(hdf5, batch_size, phase):
+def MLP(hdf5, batch_size, sample_length, phase):
     n = caffe.NetSpec()
+    if phase != 'inference':
+        n.data, n.label = L.HDF5Data(batch_size=batch_size, source=hdf5, ntop=2)
+    else:
+        n.data = L.Input(input_param={'shape': {'dim':[1,sample_length]}})
     n.data, n.label = L.HDF5Data(batch_size=batch_size, source=hdf5, ntop=2)
     n.ip1 = L.InnerProduct(n.data, num_output=256, weight_filler=dict(type='xavier'))
     n.relu1 = L.ReLU(n.ip1, in_place=True)
@@ -18,6 +22,8 @@ def MLP(hdf5, batch_size, phase):
     elif phase=='test':
         n.prob = L.Softmax(n.ip3)
         n.accuracy = L.Accuracy(n.prob, n.label)
+    elif phase=='inference':
+        n.prob = L.Softmax(n.ip3)
     
     return n.to_proto()
 

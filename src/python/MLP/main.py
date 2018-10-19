@@ -47,11 +47,13 @@ if not os.path.exists('models'):
 cached_dataDir = os.path.join(os.getcwd(), 'data')
 output_model_dir = os.path.join(os.getcwd(), 'models')
 
+
+# finding train/test database file. If not given, default should be in /bin folder after running the C++ executable.
 srcDataDir = os.path.join(os.getcwd(), "../../../bin")
 train_data = "train.h5"
 test_data = "test.h5"
 if args["data_directory"]:
-    dataDir = args["data_directory"]
+    srcDataDir = args["data_directory"]
 if args["processed_train"]:
 	train_data = args["processed_train"]
 if args["processed_test"]:
@@ -60,14 +62,19 @@ train_data_filepath = os.path.join(srcDataDir, train_data)
 test_data_filepath = os.path.join(srcDataDir, test_data)
 train_file = h5py.File(train_data_filepath, 'r')
 test_file = h5py.File(test_data_filepath, 'r')
+
+
 train_data_len = len(train_file['data'])
-print (train_data_len)
+feature_vector_len = len(train_file['data'][0])
+test_data_len = len(test_file['data'])
+print ("num of samples: ", train_data_len, "sample vector length: ", feature_vector_len)
 
 if not os.path.exists(train_data_filepath) or not os.path.exists(test_data_filepath):
     print("[Error]: Expecting  processed train and test data file exists in the directory, but at least one is missing. Action aborted.")
     exit(1)
 
 
+# prepare data source path for training
 train_path_txt = os.path.join(cached_dataDir, 'train_path.txt')
 test_path_txt = os.path.join(cached_dataDir, 'test_path.txt')
 with open(train_path_txt, 'w') as f:
@@ -82,16 +89,20 @@ print("[Note]: Generate and compile autoencoder model...")
 modelName = "MLP"
 trainModel = os.path.join(output_model_dir, modelName+'_train.prototxt')
 testModel = os.path.join(output_model_dir, modelName+'_test.prototxt')
+inferenceModel = os.path.join(output_model_dir, modelName+'_deploy.prototxt')
 
 ### prepare model and sovler
 #caffe.set_mode_cpu()
 caffe.set_device(0)
 caffe.set_mode_gpu()
 with open(trainModel, 'w') as f:
-    f.write(str(MLP(train_path_txt, train_batch_size, 'train')))
+    f.write(str(MLP(train_path_txt, train_batch_size, feature_vector_len, 'train')))
 
 with open(testModel, 'w') as f:
-    f.write(str(MLP(test_path_txt, test_batch_size, 'test')))
+    f.write(str(MLP(test_path_txt, test_batch_size, feature_vector_len, 'test')))
+
+with open(inferenceModel, 'w') as f:
+    f.write(str(MLP(test_path_txt, test_batch_size, feature_vector_len, 'inference')))
 
 print("[Note]: Configuring the optimizer...")
 solver_path = Solver(modelName, trainModel, testModel, train_data_len, train_batch_size, epochs, output_model_dir)
