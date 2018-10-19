@@ -6,6 +6,7 @@ This project is designed to distinguish between real person and fake images or v
 
 This project contains a SVM models trained on Rotation Invariant Uniform LBP histogram. The historgram vector is extraced from the DOG(difference of gaussian iamge) on all channels of HSV and YCbCr colorspaces. 
 
+--------------------------
 #### Usage:
 ##### C++ program:
 dependency: opencv(with HDF5 module support)
