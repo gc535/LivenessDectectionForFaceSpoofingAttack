@@ -1,5 +1,7 @@
 import caffe
 import os
+import argparse
+import h5py
 
 ### parse argument
 ag = argparse.ArgumentParser()
@@ -22,9 +24,10 @@ else:
 
 
 data_path = os.path.join(os.getcwd(), '../../../bin/test.h5')
-if os.path.exists(args["data_path"]):
-    data_path = args["data_path"]
-elif os.path.exists(args["data_path"]):
+if args["data_path"]:
+    if os.path.exists(args["data_path"]):
+        data_path = args["data_path"]
+elif os.path.exists(data_path):
     print("no data file given, using default in /bin directory")
 else:
     print("[Error]: Test file dose not exist. Aborted.")
