@@ -120,7 +120,7 @@ void saveMatToHDF5_single(cv::Mat& input, const std::string filename, const std:
 }
 
 
-void saveMatToHDF5(cv::Mat& data, cv::Mat& label, const std::string filename)
+void saveMatToHDF5(const cv::Mat data, const cv::Mat label, const std::string filename)
 {
     CV_Assert(data.rows != 0 && label.rows!= 0 && data.rows == label.rows);
     std::string full_filename = filename+".h5";
