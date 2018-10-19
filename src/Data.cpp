@@ -125,11 +125,11 @@ void Data::DataPreparation(cv::Mat& data, cv::Mat& label)
 				data.push_back(sample_hist_vector);
 
 				/* prepare label feature vector */
-				if((*it).find("fake") != string::npos)  // real person
+				if((*it).find("fake") != string::npos)  
 				{
 					label.push_back(0);
 				}
-				else if((*it).find("living") != string::npos)  //fake attack
+				else if((*it).find("living") != string::npos)  
 				{
 					label.push_back(1);
 				}
