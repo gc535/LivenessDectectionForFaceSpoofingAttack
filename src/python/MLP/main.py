@@ -60,6 +60,8 @@ if args["processed_test"]:
 	test_data = args["processed_test"]
 train_data_filepath = os.path.join(srcDataDir, train_data)
 test_data_filepath = os.path.join(srcDataDir, test_data)
+print("using train data: ", train_data_filepath)
+print("using test data: ", test_data_filepath)
 train_file = h5py.File(train_data_filepath, 'r')
 test_file = h5py.File(test_data_filepath, 'r')
 
