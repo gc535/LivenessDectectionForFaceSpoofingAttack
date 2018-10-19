@@ -7,7 +7,7 @@ This project is designed to distinguish between real person and fake images or v
 This project contains a SVM models trained on Rotation Invariant Uniform LBP histogram. The historgram vector is extraced from the DOG(difference of gaussian iamge) on all channels of HSV and YCbCr colorspaces. 
 
 #### Usage:
-#####C++ program:
+##### C++ program:
 dependency: opencv(with HDF5 module support)
 generates the train and test data stored in two HDF5 files, and train a SVM model then output the SVM model accuracy.
 (The generated HDF5 files can be used to generate a MLP model by python in the /src/python/MLP folder)
@@ -21,7 +21,7 @@ $ ./main -d <path-to-the-data-root-directory>
 [note: data root directory should contain two folders: train and test.]
 Then you should see generated data files and one model file. Accuracy and detial will show in the command window. 
 
-#####Python program:
+##### Python program:
 dependency: python-opencv, h5py, caffe
 ```
 $ cd {project root}/src/python/MLP
