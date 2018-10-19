@@ -23,6 +23,7 @@ else:
     exit(1)
 
 
+# find testing data
 data_path = os.path.join(os.getcwd(), '../../../bin/test.h5')
 if args["data_path"]:
     if os.path.exists(args["data_path"]):
@@ -36,6 +37,15 @@ test_file = h5py.File(data_path, 'r')
 test_data_len = len(test_file['data'])
 
 
+# prepare path txt
+if not os.path.exists('data'):
+    os.makedirs('data')
+cached_dataDir = os.path.join(os.getcwd(), 'data')
+test_path_txt = os.path.join(cached_dataDir, 'test_path.txt')
+with open(test_path_txt, 'w') as f:
+    print(data_path, file=f)
+
+    
 ### load model 
 net = caffe.Net(model_path,
                 checkpoint_path,
@@ -54,12 +64,16 @@ for itr in range(test_data_len//100):   # hard code the batchsize here, since it
         # count actaul fake/living numbers 
         if expected_label[sample] == 1: 
             living_total += 1
+            if result[sample] == 1:
+                living_cnt += 1
         else:
             fake_total += 1
-        # count predicted fake/living numbers    
-        if result[sample] == 1:
-            living_cnt += 1
-        else:
-            fake_cnt += 1
-print("total living samples: ", living_total, " total fake samples: ", fake_total)
-print("total living detected: ", living_cnt, " total fake detected: ", fake_cnt)
+            if result[sample] == 0:
+                fake_cnt += 1
+   
+
+print("[Note]: Total living samples: ", living_total, " total fake samples: ", fake_total)
+print("[Note]: Total living detected: ", living_cnt, " total fake detected: ", fake_cnt)
+print("====================================================")
+print("[Note]: Living accuracy: ", living_cnt/living_total)
+print("[Note]: Fake accuracy: ", fake_cnt/fake_total)
