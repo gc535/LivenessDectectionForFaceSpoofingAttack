@@ -1,23 +1,27 @@
-# LivenessDectectionForFaceSpoofingAttack
+# Anti Face Spoofing Attack Based On Facial LBP and Optical Flow
 
-### This is a project designed to handle face spoofing attack in the face recognition camera. (on going)
+### This is a project designed to handle face spoofing attack in the face recognition camera. (updating)
 
 This project is designed to distinguish between real person and fake images or videos shows up in front of the security camera.
 
-This project contains a SVM models trained on Rotation Invariant Uniform LBP histogram. The historgram vector is extraced from the DOG(difference of gaussian iamge) on all channels of HSV and YCbCr colorspaces. 
+The current algorithm uses LBP extraction on the facial image and the Optical Flow image. Two MLP networks are trained on this two features and their encoded results are then combined and sent to a merging MLP model, where the final prediction is generated.  
 
 --------------------------
 #### Usage:
 ##### C++ program:
-dependency: opencv(with HDF5 module support)
-generates the train and test data stored in two HDF5 files, and train a SVM model then output the SVM model accuracy.
+dependency: opencv(with HDF5 module support, dnn module, ml module)
+There will be two executable files generated after make the source code: lbp and combine.
+lbp: generates the "train.h5" and "test.h5" storing the train and test data, then trains a SVM model then output the SVM model accuracy.
 (The generated HDF5 files can be used to generate a MLP model by python in the /src/python/MLP folder)
+
+combine: loads two MLP networks trained on the LBP and Optical Flow feature, then run the inferece on individual input image to generate a "intermediate result", then stores the result into another "train.h5" and "test.h5" files. These two files are used to trained the "merging network" (MLP as well). Training and testing code are also in the /src/python/MLP folder.
 
 ```
 $ cd {project root}/src
-$ make
+$ make [default to make all, other options: make lbp, make combine]
 $ cd {project root}/bin    
-$ ./main -d <path-to-the-data-root-directory>  
+$ ./lbp -d <path-to-the-data-root-directory>  
+$ ./combine -m1 path-to-model1 -p1 path-to-model1-parameter -m2 path-to-model2 -p2 path-to-model2-parameter -d path-to-data-folder -r image-resize-factor -c lbp-cell-size
 ```
 [note: data root directory should contain two folders: train and test.]
 Then you should see generated data files and one model file. Accuracy and detial will show in the command window. 
@@ -38,9 +42,10 @@ This will run the test on the whole data set (default 'test.h5' in /bin) after t
 
 
 #### Note:
-  1. Currently, test and train are integrated in main.cpp and main.py
-  2. Current version performs DOG on all colorspace channels followed by LBP feature extraction on all channels.
-  3. Best accuracy can be achieve by trainig MLP model. (around 97%) 
+  1. Currently, the merging MLP is still in development.
+  2. Current version lbp performs DOG on all colorspace channels followed by LBP feature extraction on all channels.
+  3. sub MLP network trained solely on LBP feature can obtain an (best) accuracy around 97%.
+  4. This project does not generate OFM (optical flow map) data, but directly used it to train a sub MLP network.
 
 ---------------------
 update 10/09/2018:
@@ -67,3 +72,8 @@ update 10/17/2018:
 update 10/18/2018:
   1. generated a deploy model for single inference purpose. 
   2. added a inference script to run the test on whole test set after training the MLP.
+
+update 10/24/2018:
+  1. added another executable for generating data for training the merging MLP
+  2. update the Makefile
+  
