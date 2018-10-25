@@ -21,8 +21,8 @@ from Util import Monitor
 #######################
 ag = argparse.ArgumentParser()
 ag.add_argument("-d", "--data-directory", required=False, help="path to the data file")    # format: -r 128,96
-ag.add_argument("-t", "--processed-train", required=False, help="name of the train data file: default is 'TrainFeature.txt'")  # format: -c 8  (row and colume are assume to be the same)
-ag.add_argument("-v", "--processed-test", required=False, help="name of the test data file: default is 'TrainFeature.txt'")  # format: -c 8  (row and colume are assume to be the same)
+ag.add_argument("-t", "--processed-train", required=False, help="name of the train data file: default is 'train.h5'")  # format: -c 8  (row and colume are assume to be the same)
+ag.add_argument("-v", "--processed-test", required=False, help="name of the test data file: default is 'test.h5'")  # format: -c 8  (row and colume are assume to be the same)
 ag.add_argument("-tb", "--train-batch-size", required=False, help="parameters to define the batch size")                    # format: -tb 300  (300 samples per iteration)
 ag.add_argument("-vb", "--test-batch-size", required=False, help="parameters to define the batch size")                 # format: -vb 100  (300 samples per iteration)
 ag.add_argument("-e", "--epoch-num", required=False, help="parameters to specify the number of training epochs")         # format: -e 100 (defualt is 100)
