@@ -1,11 +1,13 @@
 PROJECT_HOME=..
 CXX = g++
 IDIR=.
-CFLAGS = -O0 -std=c++11 -I$(IDIR)
+CAFFE_IDIR=/home/ubuntu/anaconda3/envs/caffe-cpu/include
+CFLAGS = -O0 -std=c++11 -I$(IDIR) 
 
 #OPENCV_PATH=/usr/local/lib
 OPENCV_PATH=/usr/local/lib
-LIBFLAGS = -L${OPENCV_PATH} -lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_ml -lopencv_hdf
+
+LIBFLAGS = -L${OPENCV_PATH} -lopencv_hdf -lopencv_ml -lopencv_dnn -lopencv_imgcodecs -lopencv_imgproc -lopencv_core 
 ODIR=obj
 
 
