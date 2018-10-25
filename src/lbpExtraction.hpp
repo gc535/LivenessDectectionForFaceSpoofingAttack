@@ -1,5 +1,5 @@
-#ifndef MAIN_HPP
-#define MAIN_HPP
+#ifndef LBP_EXTRACTION_HPP
+#define LBP_EXTRACTION_HPP
 
 
 
@@ -19,4 +19,4 @@ void printHelp() {
 	std::cout << "\t \t \tData root should contain a two sub folder: 'train' and 'test" << std::endl;
 }
 
-#endif //MAIN_HPP
+#endif //LBP_EXTRACTION_HPP

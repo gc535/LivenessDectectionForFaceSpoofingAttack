@@ -1,7 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/ml.hpp>
 
-#include <main.hpp>
+#include <lbpExtraction.hpp>
 #include <Data.hpp>
 #include <ProgressBar.hpp>
 #include <Util.hpp>
