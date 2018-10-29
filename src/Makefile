@@ -23,6 +23,13 @@ _LBP_SRCS := lbpExtraction.cpp
 _LBP_OBJS := $(_LBP_SRCS:.cpp=.o)
 LBP_OBJS := $(patsubst %, $(ODIR)/%,$(_LBP_OBJS))
 
+# binary for ofm data preparation
+OFM = ${PROJECT_HOME}/bin/ofm
+
+_OFM_SRCS := OFM.cpp
+_OFM_OBJS := $(_OFM_SRCS:.cpp=.o)
+OFM_OBJS := $(patsubst %, $(ODIR)/%,$(_OFM_OBJS))
+
 # binary for data merging
 COMBINE = ${PROJECT_HOME}/bin/combine
 
@@ -31,17 +38,19 @@ _COMBINE_OBJ = $(_COMBINE_SRC:.cpp=.o)
 COMBINE_OBJ = $(patsubst %, $(ODIR)/%,$(_COMBINE_OBJ))
 
 
-.PHONY: all lbpdata mergeddata
+.PHONY: all lbpdata ofmdata mergeddata
 
-all: lbpdata mergeddata
+all: lbpdata ofmdata mergeddata
 
 lbpdata: $(LBP)
-
+ofmdata: $(OFM)
 mergeddata: $(COMBINE)
 
 $(LBP): $(LBP_OBJS) $(COMMON_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS) 
 
+$(OFM): $(OFM_OBJS) $(COMMON_OBJS)
+	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS)
 
 $(COMBINE): $(COMBINE_OBJ) $(COMMON_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS) 
@@ -54,5 +63,5 @@ print-%  : ; @echo $* = $($*)
 
 
 clean:
-	rm -f $(COMBINE) $(LBP) ./obj/*.o
+	rm -f $(COMBINE) $(LBP) $(OFM) ./obj/*.o
 
