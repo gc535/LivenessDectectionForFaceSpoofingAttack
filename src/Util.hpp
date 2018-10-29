@@ -12,5 +12,6 @@ bool exists (const std::string& name);
 void writeMatToFile(cv::Mat& m, const std::string& filename);
 void saveMatToHDF5_single(cv::Mat& input, const std::string filename, const std::string type);
 void saveMatToHDF5(const cv::Mat data, const cv::Mat label, const std::string filename);
+int getFilelist( std::string dirPath, std::vector<std::string>& filelist);
 
 #endif //UTIL_HPP

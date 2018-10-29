@@ -1,11 +1,18 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
+#include <opencv2/hdf/hdf5.hpp>
+
+#include <Util.hpp>
+
+#include <stdlib.h>
 #include <vector>
 #include <string>
 #include <iostream>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <errno.h>
 #include <unistd.h>
 #include <fstream>
-#include <opencv2/hdf/hdf5.hpp>
 
 
 cv::Mat mergeRows(const cv::Mat& A, const cv::Mat& B)
@@ -106,7 +113,7 @@ void writeMatToFile(cv::Mat& m, const std::string& filename)
 }
 
 
-
+/* save a specific data matrix into HDF5 file*/
 void saveMatToHDF5_single(cv::Mat& input, const std::string filename, const std::string type)
 {   
     CV_Assert(input.rows != 0 && input.cols!= 0);
@@ -119,7 +126,7 @@ void saveMatToHDF5_single(cv::Mat& input, const std::string filename, const std:
     h5io->close();
 }
 
-
+/* save both data matrix and label matrix into different blocks in one HDF5 file*/
 void saveMatToHDF5(const cv::Mat data, const cv::Mat label, const std::string filename)
 {
     CV_Assert(data.rows != 0 && label.rows!= 0 && data.rows == label.rows);
@@ -128,4 +135,35 @@ void saveMatToHDF5(const cv::Mat data, const cv::Mat label, const std::string fi
     h5io->dswrite( data, "data" );
     h5io->dswrite( label, "label" );
     h5io->close();
+}
+
+
+/* get a list of name of all file format contents in the given directory */
+int getFilelist( std::string dirPath, std::vector<std::string>& filelist)
+{
+    DIR *dp;
+    struct dirent *filePath;
+    if((dp  = opendir(dirPath.c_str())) == NULL) {
+        std::cout << "[ERROR]: Error(" << errno << ") opening " << dirPath << std::endl;
+        return errno;
+    }
+
+    filelist.clear(); //clear old file list
+    struct stat path_stat;  // check path type
+    while ((filePath = readdir(dp)) != NULL) 
+    {
+        stat((dirPath+std::string(filePath->d_name)).c_str(), &path_stat);
+        if(S_ISREG(path_stat.st_mode))   // is file
+        {
+            filelist.push_back(std::string(filePath->d_name));
+        }
+    }
+    closedir(dp);
+    if(filelist.size() == 0)
+    { 
+        std::cout << "[ERROR]: Error(" << errno << "). trying to return an empty fileist " << dirPath << std::endl;
+        return errno;
+    }
+    return 0;
+
 }
