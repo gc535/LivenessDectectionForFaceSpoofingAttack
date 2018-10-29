@@ -5,6 +5,8 @@
 #include <Data.hpp>
 #include <ProgressBar.hpp>
 #include <Util.hpp>
+#include <SingleChannelDOG.hpp>
+#include <LBP.hpp>
 
 #include <stdlib.h>
 #include <vector>
@@ -73,17 +75,17 @@ int main(int argc, char** argv)
 
 	std::cout<<"[Note]: Starting data preparation phase..."<<std::endl;
 	// prepare train data
-	Data data(trainDir, Data::Action::TRAIN, resize, cellsize);
+	Data data(trainDir, Data::Action::TRAIN);
 	cv::Mat train_data, train_label;
 	if(action != TEST)
 	{
-		data.DataPreparation(train_data, train_label);
+		data.DataPreparation(DOG_LBP, train_data, train_label, "dog_lbp", resize, cellsize);
 	}
 	
 	// prepare test data
-	data.update(testDir, Data::Action::TEST, resize, cellsize);
+	data.update(testDir, Data::Action::TEST);
 	cv::Mat test_data, test_label;
-	data.DataPreparation(test_data, test_label);
+	data.DataPreparation(DOG_LBP, test_data, test_label, "dog_lbp", resize, cellsize);
 
 
 	std::cout<<"[Note]: Starting model traning phase..."<<std::endl;
@@ -151,4 +153,80 @@ void printHelp() {
 	std::cout << "\t-c <int> - Desired cell size for LBP extraction (default=16)" << std::endl;
 	std::cout << "\t-d <string> - Specificy a path to the root of data directory: (default=none)" << std::endl;
 	std::cout << "\t \t \tData root should contain a two sub folder: 'train' and 'test" << std::endl;
+}
+
+void DOG_LBP(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filelist, int resize, int cellsize )
+{
+	cv::Mat srcImg;
+	cv::Mat resizedImg;
+
+
+	LBP lbp_cell(cv::Size(cellsize, cellsize));
+	LBP lbp_full(cv::Size(resize, resize));
+	int total_ticks = filelist.size();
+	ProgressBar progressBar(total_ticks, 70, '=', '-');
+
+
+
+	for(std::vector<std::string>::const_iterator it = filelist.begin(); it != filelist.end(); ++it)
+	{
+		srcImg = cv::imread(*it, cv::IMREAD_COLOR);
+		cv::resize(srcImg, resizedImg, cv::Size(resize, resize));
+		
+
+		/* prepare feature vector for every sample*/
+		std::vector<cv::Mat> dog_channels;
+		const std::vector<cv::Vec2d> vector_sigmas = { cv::Vec2d(0.5, 1), cv::Vec2d(1, 2), cv::Vec2d(0.5,2)};
+		
+		
+		// hsv
+		cv::Mat hsv_image;
+		cv::cvtColor(resizedImg, hsv_image, cv::COLOR_RGB2HSV);
+		const std::vector<cv::Mat> hsv_channels = splitChannels(hsv_image);
+		for(std::vector<cv::Mat>::const_iterator channel = hsv_channels.begin(); channel != hsv_channels.end(); ++channel)
+		{
+			SingalChannelImageDoG(*channel, vector_sigmas, dog_channels);
+		}
+		
+		
+		// ycbcr
+		cv::Mat ycbcr_image;
+		cv::cvtColor(resizedImg, ycbcr_image, cv::COLOR_RGB2YCrCb);
+		const std::vector<cv::Mat> ycbcr_channels = splitChannels(ycbcr_image);
+		for(std::vector<cv::Mat>::const_iterator channel = ycbcr_channels.begin(); channel != ycbcr_channels.end(); ++channel)
+		{
+			SingalChannelImageDoG(*channel, vector_sigmas, dog_channels);
+		}
+		
+		// LBP on all DOG image channels
+		//std::cout<<"dog channels nums: "<<dog_channels.size()<<std::endl;
+		cv::Mat sample_hist_vector;  
+		for(std::vector<cv::Mat>::iterator channel = dog_channels.begin(); channel != dog_channels.end(); ++channel)
+		{
+			//std::cout<<"rows: "<<sample_hist_vector.rows<<"cols: "<<sample_hist_vector.cols<<std::endl;
+			cv::Mat channel_lbp_hist_cell;
+			lbp_cell.computeLBPFeatureVector(*channel, channel_lbp_hist_cell, LBP::Mode::RIU2);
+			sample_hist_vector = mergeCols(sample_hist_vector, channel_lbp_hist_cell);
+			cv::Mat channel_lbp_hist_full;
+			lbp_full.computeLBPFeatureVector(*channel, channel_lbp_hist_full, LBP::Mode::RIU2);
+			sample_hist_vector = mergeCols(sample_hist_vector, channel_lbp_hist_full);
+		}
+		// push back sample
+		data.push_back(sample_hist_vector);
+
+		/* prepare label feature vector */
+		if((*it).find("fake") != string::npos)  
+		{
+			label.push_back(0);
+		}
+		else if((*it).find("living") != string::npos)  
+		{
+			label.push_back(1);
+		}
+
+		++progressBar;
+		progressBar.display();
+	}
+	progressBar.done();
+
 }
