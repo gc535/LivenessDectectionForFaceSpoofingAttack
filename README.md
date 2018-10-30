@@ -1,6 +1,6 @@
 # Anti Face Spoofing Attack Based On Facial LBP and Optical Flow
 
-### This is a project designed to handle face spoofing attack in the face recognition camera. (updating)
+### This project is designed to handle face spoofing attack in the face recognition camera. (updating)
 
 This project is designed to distinguish between real person and fake images or videos shows up in front of the security camera.
 
