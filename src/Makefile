@@ -31,20 +31,20 @@ _OFM_OBJS := $(_OFM_SRCS:.cpp=.o)
 OFM_OBJS := $(patsubst %, $(ODIR)/%,$(_OFM_OBJS))
 
 # binary for data merging
-COMBINE = ${PROJECT_HOME}/bin/combine
+INTEGRATION = ${PROJECT_HOME}/bin/integration
 
-_COMBINE_SRC = combine.cpp
-_COMBINE_OBJ = $(_COMBINE_SRC:.cpp=.o)
-COMBINE_OBJ = $(patsubst %, $(ODIR)/%,$(_COMBINE_OBJ))
+_INTEGRATION_SRC = integration.cpp
+_INTEGRATION_OBJ = $(_INTEGRATION_SRC:.cpp=.o)
+INTEGRATION_OBJ = $(patsubst %, $(ODIR)/%,$(_INTEGRATION_OBJ))
 
 
-.PHONY: all lbpdata ofmdata mergeddata
+.PHONY: all lbpdata ofmdata integration
 
-all: lbpdata ofmdata mergeddata
+all: lbpdata ofmdata integration
 
 lbpdata: $(LBP)
 ofmdata: $(OFM)
-mergeddata: $(COMBINE)
+integration: $(INTEGRATION)
 
 $(LBP): $(LBP_OBJS) $(COMMON_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS) 
@@ -52,7 +52,7 @@ $(LBP): $(LBP_OBJS) $(COMMON_OBJS)
 $(OFM): $(OFM_OBJS) $(COMMON_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS)
 
-$(COMBINE): $(COMBINE_OBJ) $(COMMON_OBJS)
+$(INTEGRATION): $(INTEGRATION_OBJ) $(COMMON_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS) 
 
 
@@ -63,5 +63,5 @@ print-%  : ; @echo $* = $($*)
 
 
 clean:
-	rm -f $(COMBINE) $(LBP) $(OFM) ./obj/*.o
+	rm -f $(INTEGRATION) $(LBP) $(OFM) ./obj/*.o
 
