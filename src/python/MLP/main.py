@@ -94,9 +94,9 @@ testModel = os.path.join(output_model_dir, modelName+'_test.prototxt')
 inferenceModel = os.path.join(output_model_dir, modelName+'_deploy.prototxt')
 
 ### prepare model and sovler
-#caffe.set_mode_cpu()
-caffe.set_device(0)
-caffe.set_mode_gpu()
+caffe.set_mode_cpu()
+#caffe.set_device(0)
+#caffe.set_mode_gpu()
 with open(trainModel, 'w') as f:
     f.write(str(MLP(train_path_txt, train_batch_size, feature_vector_len, 'train')))
 
