@@ -11,7 +11,7 @@ def MLP(hdf5, batch_size, sample_length, phase):
         n.data, n.label = L.HDF5Data(batch_size=batch_size, source=hdf5, ntop=2)
     else:
         n.data = L.Input(input_param={'shape': {'dim':[1,sample_length]}})
-    n.data, n.label = L.HDF5Data(batch_size=batch_size, source=hdf5, ntop=2)
+    #n.data, n.label = L.HDF5Data(batch_size=batch_size, source=hdf5, ntop=2)
     n.ip1 = L.InnerProduct(n.data, num_output=256, weight_filler=dict(type='xavier'))
     n.relu1 = L.ReLU(n.ip1, in_place=True)
     n.ip2 = L.InnerProduct(n.relu1, num_output=125, weight_filler=dict(type='xavier'))
