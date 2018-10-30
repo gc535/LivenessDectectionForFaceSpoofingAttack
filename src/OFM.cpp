@@ -1,5 +1,8 @@
+#include <opencv2/opencv.hpp>
+
 #include <Util.hpp>
 #include <LBP.hpp>
+#include <Data.hpp>
 #include <ProgressBar.hpp>
 #include <OFM.hpp>
 
@@ -18,49 +21,40 @@ int main(int argc, char** argv)
 	ParseArgument(argc, argv, resize, cell_size, data_path);
 
 	std::cout<<data_path<<resize<<cell_size<<std::endl;
-	std::string trainFaceDir = data_path+"/train/face";
-	std::string trainSceneDir = data_path+"/train/scene";
-	std::string testFaceDir = data_path+"/test/scene";
-	std::string testSceneDir = data_path+"/test/face";
+	std::string trainDir = data_path+"/train/";
+	std::string testDir = data_path+"/test/";
 
+	std::cout<<"[Note]: Starting data preparation phase..."<<std::endl;
+	// prepare train data
+	Data data(trainDir, Data::Action::TRAIN);
+	cv::Mat train_data, train_label;
+	data.DataPreparation(OFM_LBP, train_data, train_label, "ofm_lbp", resize, cell_size);
+	
+	// prepare test data
+	data.update(testDir, Data::Action::TEST);
+	cv::Mat test_data, test_label;
+	data.DataPreparation(OFM_LBP, test_data, test_label, "ofm_lbp", resize, cell_size);
 
-	/*
-	std::vector<std::string> trainFaces;
-	std::vector<std::string> testFaces;
-	if(getFilelist(trainFaceDir, trainFaces))
-	{
-		std::cout<<"[Error]: Failed to get the image filelist. Exiting..."<<std::endl;
-		exit(1);
-	} 
-	if(getFilelist(testFaceDir, testFaces))
-	{
-		std::cout<<"[Error]: Failed to get the image filelist. Exiting..."<<std::endl;
-		exit(1);
-	}
+	return 0;
+}
 
+void OFM_LBP(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filelist, int resize, int cell_size)
+{
 	cv::Mat srcImg, resizedImg; 							// source images from file
-	LBP lbp_face_cell(cv::Size(_cellsize, _cellsize));  	// create LBP extractor for face
-	LBP lbp_scene_cell(cv::Size(_cellsize, _cellsize));		// create LBP extractor for scene
-	cv::Mat data, label;  									// data and label matrix to be prepared
+	//LBP lbp_face_cell(cv::Size(_cellsize, _cellsize));  	// create LBP extractor for face
+	//LBP lbp_scene_cell(cv::Size(_cellsize, _cellsize));		// create LBP extractor for scene
+	
+	LBP lbp(cv::Size(cell_size, cell_size));
+
 	int total_ticks = filelist.size();						// prepare progress bar
 	ProgressBar progressBar(total_ticks, 70, '=', '-');		// prepare progress bar
-	for(std::vector<std::string>::iterator it = filelist.begin(); it != filelist.end(); ++it)
+	for(std::vector<std::string>::const_iterator it = filelist.begin(); it != filelist.end(); ++it)
 	{
-   		srcImg = cv::imread(_dirPath+*it, cv::IMREAD_GRAYSCALE);
+   		srcImg = cv::imread(*it, cv::IMREAD_GRAYSCALE);
 		cv::resize(srcImg, resizedImg, cv::Size(resize, resize));
-		int blocklen = resizedImg.rows/3;
-		cv::Mat center_face = resizedImg(cv::Range(blocklen, 2*blocklen), cv::Range(blocklen, 2*blocklen)); // center block in all 9 blocks
 
-		cv::Mat sample_hist_vector;  // new container stores concatenated LBP feature vectors of a single sample
-		// face
-		cv::Mat face_lbp_hist_cell;
-		lbp_cell.computeLBPFeatureVector(center_face, face_lbp_hist_cell, LBP::Mode::RIU2);
-		sample_hist_vector = mergeCols(sample_hist_vector, face_lbp_hist_cell);
-
-		//scene
-		cv::Mat scene_lbp_hist_cell;
-		lbp_full.computeLBPFeatureVector(resizedImg, scene_lbp_hist_cell, LBP::Mode::RIU2);
-		sample_hist_vector = mergeCols(sample_hist_vector, scene_lbp_hist_cell);
+		cv::Mat sample_hist_vector;  // new container stores the complete feature vector for every sample
+		lbp.computeLBPFeatureVector(resizedImg, sample_hist_vector, LBP::Mode::RIU2);
 		
 		data.push_back(sample_hist_vector);
 		// /* prepare label feature vector 
@@ -76,13 +70,8 @@ int main(int argc, char** argv)
 		progressBar.display();
 	}
 	progressBar.done();  // terminate progress bar display
-	saveMatToHDF5(data.clone(), label.clone(), action_name);
-	*/
 
-
-	return 0;
 }
-
 
 void ParseArgument(const int& argc, const char* const* argv,  
 				   int& resize, int& cell_size,
