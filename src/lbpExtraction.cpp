@@ -160,14 +160,11 @@ void DOG_LBP(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& file
 	cv::Mat srcImg;
 	cv::Mat resizedImg;
 
+	LBP lbp_cell(cv::Size(cellsize, cellsize));    // setup the lbp extractor
+	LBP lbp_full(cv::Size(resize, resize));		   // setup the lbp extractor
 
-	LBP lbp_cell(cv::Size(cellsize, cellsize));
-	LBP lbp_full(cv::Size(resize, resize));
 	int total_ticks = filelist.size();
 	ProgressBar progressBar(total_ticks, 70, '=', '-');
-
-
-
 	for(std::vector<std::string>::const_iterator it = filelist.begin(); it != filelist.end(); ++it)
 	{
 		srcImg = cv::imread(*it, cv::IMREAD_COLOR);
