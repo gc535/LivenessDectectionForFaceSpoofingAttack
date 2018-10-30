@@ -1,3 +1,4 @@
+#include <opencv2/opencv.hpp>
 #include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
@@ -22,14 +23,14 @@ int main(int argc, char** argv)
 	std::string model_1 = "", checkpoint_1 = "";
 	std::string model_2 = "", checkpoint_2 = "";
 	std::string model_3 = "", checkpoint_3 = "";
-	std::string dog_lbp_data_path = "", ofm_data_path = "", gray_img_path = "";
+	std::string dog_lbp_data_dir = "", ofm_data_dir = "", gray_img_dir = "";
 	int resize = 96, cell_size = 16;
 	ParseArgument(argc, argv, 
 				  model_1, checkpoint_1, 
 				  model_2, checkpoint_2, 
 				  model_3, checkpoint_3, 
 				  resize, cell_size, 
-				  dog_lbp_data_path, ofm_data_path, gray_img_path);
+				  dog_lbp_data_dir, ofm_data_dir, gray_img_dir);
 
 
 	/* loading network models */
@@ -93,29 +94,63 @@ int main(int argc, char** argv)
     std::vector<std::string> lbp_train_filelist, lbp_test_filelist;
     std::vector<std::string> ofm_train_filelist, ofm_test_filelist;
 
-    if(getFilelist( dog_lbp_data_path+std::string("/train/"), lbp_train_filelist))
+    if(getFilelist( dog_lbp_data_dir+std::string("/train/"), lbp_train_filelist))
     {
-    	std::cout<<"[ERROR]: Cannot get a filelist from: "<<dog_lbp_data_path+std::string("/train/")<<std::endl;
+    	std::cout<<"[ERROR]: Cannot get a filelist from: "<<dog_lbp_data_dir+std::string("/train/")<<std::endl;
     }
-    if(getFilelist( dog_lbp_data_path+std::string("/test/"), lbp_test_filelist))
+    if(getFilelist( dog_lbp_data_dir+std::string("/test/"), lbp_test_filelist))
     {
-    	std::cout<<"[ERROR]: Cannot get a filelist from: "<<dog_lbp_data_path+std::string("/test/")<<std::endl;
+    	std::cout<<"[ERROR]: Cannot get a filelist from: "<<dog_lbp_data_dir+std::string("/test/")<<std::endl;
     }
 
 
-    /* prepararing integrated data by merging inference result from all three model calculation */
+    /* prepararing integrated data by merging inference result from all three models' calculation */
     std::cout<<"[Note]: Starting merging data..."<<std::endl;
-    for(std::vector<std::string>::iterator it = lbp_train_filelist.begin(); it != lbp_train_filelist.end(); ++it)
+    // setup data and label matrix for collecting sample data
+    cv::Mat train_data, train_label, test_data, test_label;
+    std::cout<<"[Note]: Preparing training data..."<<std::endl;
+    prepareData(dog_lbp_data_dir, ofm_data_dir, gray_img_dir,
+    			net1, net2, net3,
+    			lbp_train_filelist, train,
+    			train_data, train_label);
+
+    std::cout<<"[Note]: Preparing testing data..."<<std::endl;
+    prepareData(dog_lbp_data_dir, ofm_data_dir, gray_img_dir,
+    			net1, net2, net3,
+    			lbp_test_filelist, test,
+    			test_data, test_label);
+    
+    return 0;
+}
+
+
+void prepareData(const std::string& dir1, const std::string& dir2, const std::string& dir3, 
+				 cv::dnn::Net& net1, cv::dnn::Net& net2, cv::dnn::Net& net3,
+				 const std::vector<std::string>& filelist, Action action, 
+				 cv::Mat& data, cv::Mat& label)
+{
+	// determine subdirectory from action
+	std::string subdir = action==train ? "/train/" : "/test/";
+
+	if(filelist.empty())
+	{
+		std::cout<<"[ERROR]: "<<subdir <<" filelist empty. please check."<< std::endl;
+		exit(1);
+	}
+	// setup progress bar
+    int total_ticks = filelist.size();
+	ProgressBar progressBar(total_ticks, 70, '=', '-');
+    for(std::vector<std::string>::const_iterator it = filelist.begin(); it != filelist.end(); ++it)
     {
     	// proceed only if same sample exisits in all three data directory
-    	if(exists( ofm_data_path+std::string("/train/")+(*it) ) && exists( gray_img_path+std::string("/train/")+(*it) ) )
+    	if(exists( dir2+subdir+(*it) ) && exists( dir3+subdir+(*it) ) )
     	{
     		// model 1 sample preparation 
     		std::cout<<"[Note]: Preparing model 1 data..."<<std::endl;
     		cv::Mat model1_image, model1_image_resized, model1_input_feature;
-    		model1_image = cv::imread(dog_lbp_data_path+std::string("/train/")+(*it), cv::IMREAD_COLOR);
-    		cv::resize(model1_image, model1_image_resized, cv::Size(resize, resize));
-    		if( dog_lbp_extraction(model1_image_resized, model1_input_feature, resize, cell_size) )
+    		model1_image = cv::imread( dir1+subdir+(*it), cv::IMREAD_COLOR);
+    		cv::resize(model1_image, model1_image_resized, cv::Size(64, 64));
+    		if( dog_lbp_extraction(model1_image_resized, model1_input_feature, 64, 8) )
     		{
     			continue;
     		}
@@ -123,9 +158,9 @@ int main(int argc, char** argv)
     		// model 2 sample preparation
     		std::cout<<"[Note]: Preparing model 2 data..."<<std::endl;
     		cv::Mat model2_image, model2_image_resized, model2_input_feature;
-    		model2_image = cv::imread(ofm_data_path+std::string("/train/")+(*it), cv::IMREAD_GRAYSCALE);
-    		cv::resize(model2_image, model2_image_resized, cv::Size(resize, resize));
-    		if( ofm_extraction(model2_image_resized, model2_input_feature, cell_size) )
+    		model2_image = cv::imread( dir2+subdir+(*it), cv::IMREAD_GRAYSCALE);
+    		cv::resize(model2_image, model2_image_resized, cv::Size(64, 64));
+    		if( ofm_extraction(model2_image_resized, model2_input_feature, 8) )
     		{
     			continue;
     		}
@@ -133,65 +168,58 @@ int main(int argc, char** argv)
     		// model 3 sample preparation
     		std::cout<<"[Note]: Preparing model 3 data..."<<std::endl;
     		cv::Mat model3_image, model3_image_resized, model3_input_feature;
-    		model3_image = cv::imread(gray_img_path+std::string("/train/")+(*it), cv::IMREAD_GRAYSCALE);
-    		cv::resize(model3_image, model3_image_resized, cv::Size(resize, resize));
-    		if( gray_lbp_extraction(model3_image_resized, model3_input_feature, cell_size) )
+    		model3_image = cv::imread( dir3+subdir+(*it), cv::IMREAD_GRAYSCALE);
+    		cv::resize(model3_image, model3_image_resized, cv::Size(64, 64));
+    		if( gray_lbp_extraction(model3_image_resized, model3_input_feature, 8) )
     		{
     			continue;
     		}
 
+    		/* merging all inference result into one feature vector */
+    		cv::Mat sample_feature_vector;
     		// model 1 inference
-    		std::cout<<"[Note]: Starting model 1 inference..."<<std::endl;
-			 net1.setInput(model1_input_feature);
-			 net1.forward();
-			 cv::Mat model1_result = net1.getParam(net1.getLayerId(std::string("ip3")));
-			 cv::Mat model1_prob = net1.getParam(net1.getLayerId(std::string("prob")));
-
+    		std::cout<<"[Note]: Model1 input vector shape: rows: "<<model1_input_feature.rows<<" cols: "<<model1_input_feature.cols<<std::endl;
+			net1.setInput(model1_input_feature);
+			cv::Mat model1_prob = net1.forward();
+			//std::cout<<"[Note]: Ip3 layers id: "<<net1.getLayerId(std::string("ip3"))<<std::endl;
+			cv::Mat model1_result = net1.getParam(net1.getLayerId(std::string("ip3")));
+			sample_feature_vector = mergeCols(sample_feature_vector, model1_result);
 
     		// model 2 inference
-
-
+    		std::cout<<"[Note]: Model2 input vector shape: rows: "<<model2_input_feature.rows<<" cols: "<<model2_input_feature.cols<<std::endl;
+			net2.setInput(model2_input_feature);
+			cv::Mat model2_prob = net2.forward();
+			//std::cout<<"[Note]: Ip3 layers id: "<<net1.getLayerId(std::string("ip3"))<<std::endl;
+			cv::Mat model2_result = net2.getParam(net2.getLayerId(std::string("ip3")));
+			sample_feature_vector = mergeCols(sample_feature_vector, model2_result);
 
     		// model 3 inference
-    	}
-    }
+    		std::cout<<"[Note]: Model3 input vector shape: rows: "<<model3_input_feature.rows<<" cols: "<<model3_input_feature.cols<<std::endl;
+			net3.setInput(model3_input_feature);
+			cv::Mat model3_prob = net3.forward();
+			//std::cout<<"[Note]: Ip3 layers id: "<<net1.getLayerId(std::string("ip3"))<<std::endl;
+			cv::Mat model3_result = net3.getParam(net3.getLayerId(std::string("ip3")));
+			sample_feature_vector = mergeCols(sample_feature_vector, model3_result);
 
-    /*
-    if (parser.get<bool>("opencl"))
-    {
-        net.setPreferableTarget(DNN_TARGET_OPENCL);
-    }
-    Mat img = imread(imageFile);
-    if (img.empty())
-    {
-        std::cerr << "Can't read image from the file: " << imageFile << std::endl;
-        exit(-1);
-    }
-    //GoogLeNet accepts only 224x224 BGR-images
-    Mat inputBlob = blobFromImage(img, 1.0f, Size(224, 224),
-                                  Scalar(104, 117, 123), false);   //Convert Mat to batch of images
-    net.setInput(inputBlob, "data");        //set the network input
-    Mat prob = net.forward("prob");         //compute output
-    cv::TickMeter t;
-    for (int i = 0; i < 10; i++)
-    {
-        CV_TRACE_REGION("forward");
-        net.setInput(inputBlob, "data");        //set the network input
-        t.start();
-        prob = net.forward("prob");                          //compute output
-        t.stop();
-    }
-    int classId;
-    double classProb;
-    getMaxClass(prob, &classId, &classProb);//find the best class
-    std::vector<String> classNames = readClassNames();
-    std::cout << "Best class: #" << classId << " '" << classNames.at(classId) << "'" << std::endl;
-    std::cout << "Probability: " << classProb * 100 << "%" << std::endl;
-    std::cout << "Time: " << (double)t.getTimeMilli() / t.getCounter() << " ms (average from " << t.getCounter() << " iterations)" << std::endl;
-    */
+			// push back sample
+			data.push_back(sample_feature_vector);
 
-    return 0;
+			// push back label
+			if((*it).find("fake") != string::npos)  
+			{
+				label.push_back(0);
+			}
+			else if((*it).find("living") != string::npos)  
+			{
+				label.push_back(1);
+			}
+		}
+		++progressBar;
+		progressBar.display();
+    }
+    progressBar.done();
 }
+
 
 int dog_lbp_extraction(cv::Mat& img, cv::Mat& feature_vector, const int resize, const int cell_size)
 {
@@ -279,7 +307,7 @@ void ParseArgument(const int& argc, const char* const* argv,
 				   std::string& model_2, std::string& checkpoint_2, 
 				   std::string& model_3, std::string& checkpoint_3,
 				   int& resize, int& cell_size,
-				   std::string& dog_lbp_data_path, std::string& ofm_data_path, std::string& gray_img_path)
+				   std::string& dog_lbp_data_dir, std::string& ofm_data_dir, std::string& gray_img_dir)
 {
 	if( argc < 11 ) {
 		printHelp();
@@ -289,15 +317,15 @@ void ParseArgument(const int& argc, const char* const* argv,
 		// process arguments
 		for( int i = 1; i < argc - 1; i++ ) {
 			if( strcmp( argv[i], "-d1" ) == 0 ) {
-				dog_lbp_data_path = argv[i + 1];
+				dog_lbp_data_dir = argv[i + 1];
 				i++;
 			}
 			else if( strcmp( argv[i], "-d2" ) == 0 ) {
-				ofm_data_path = argv[i + 1];
+				ofm_data_dir = argv[i + 1];
 				i++;
 			}
 			else if( strcmp( argv[i], "-d3" ) == 0 ) {
-				gray_img_path = argv[i + 1];
+				gray_img_dir = argv[i + 1];
 				i++;
 			}
 			else if( strcmp( argv[i], "-r" ) == 0 ) {
