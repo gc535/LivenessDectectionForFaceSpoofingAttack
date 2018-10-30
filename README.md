@@ -14,14 +14,18 @@ There will be two executable files generated after make the source code: lbp and
 lbp: generates the "train.h5" and "test.h5" storing the train and test data, then trains a SVM model then output the SVM model accuracy.
 (The generated HDF5 files can be used to generate a MLP model by python in the /src/python/MLP folder)
 
-combine: loads two MLP networks trained on the LBP and Optical Flow feature, then run the inferece on individual input image to generate a "intermediate result", then stores the result into another "train.h5" and "test.h5" files. These two files are used to trained the "merging network" (MLP as well). Training and testing code are also in the /src/python/MLP folder.
-
+sperate data preparation: dog_lbp, ofm, [gray, still in grogress]
+First, two[three] seperate MLP models need to be trained independently on three dataset. Before training the MLP, train and test data<data, labels> needs to be formated into HDF5 files. 
+A sample program generates the dog_lbp dataset file is as follow:
 ```
 $ cd {project root}/src
 $ make [default to make all, other options: make lbp, make combine]
 $ cd {project root}/bin    
 $ ./lbp -d <path-to-the-data-root-directory>  
-$ ./combine -m1 path-to-model1 -p1 path-to-model1-parameter -m2 path-to-model2 -p2 path-to-model2-parameter -d path-to-data-folder -r image-resize-factor -c lbp-cell-size
+```
+integration: loads three MLP networks trained on the LBP and Optical Flow feature and Gray scale image, then run the inferece on individual input image to generate a "intermediate result", then stores the result into another "train.h5" and "test.h5" files. These two files are used to trained the "merging network" (MLP as well). Training and testing code are also in the /src/python/MLP folder.
+```
+$ ./integration -m1 path-to-model1 -b1 path-to-model1-parameter -m2 path-to-model2 -b2 path-to-model2-parameter -m3 path-to-model3 -b3 path-to-model3-parameter -d1 path-to-data-folder -d2 path-to-data-folder -d3 path-to-data-folder -r image-resize-factor -c lbp-cell-size
 ```
 [note: data root directory should contain two folders: train and test.]
 Then you should see generated data files and one model file. Accuracy and detial will show in the command window. 
