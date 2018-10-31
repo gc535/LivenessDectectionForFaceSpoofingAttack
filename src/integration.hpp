@@ -19,8 +19,8 @@ enum Action
 };
 
 int dog_lbp_extraction(cv::Mat& img, cv::Mat& feature_vector, const int resize, const int cell_size);
-int ofm_extraction(cv::Mat& img, cv::Mat& feature_vector, const int cell_size);
-int gray_lbp_extraction(cv::Mat& img, cv::Mat& feature_vector, const int cell_size);
+int ofm_extraction(cv::Mat& img, cv::Mat& feature_vector, const int resize, const int cell_size);
+int gray_lbp_extraction(cv::Mat& img, cv::Mat& feature_vector, const int resize, const int cell_size);
 
 void prepareData(const std::string& dir1, const std::string& dir2, const std::string& dir3, 
 				 cv::dnn::Net& net1, cv::dnn::Net& net2, cv::dnn::Net& net3,

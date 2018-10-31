@@ -114,12 +114,25 @@ int main(int argc, char** argv)
     			lbp_train_filelist, train,
     			train_data, train_label);
 
+    std::cout<<"merged train data samples: "<<train_data.rows<<" len: "<<train_data.cols<<std::endl;
+    std::cout<<"merged train label samples: "<<train_label.rows<<" len: "<<train_label.cols<<std::endl; 
+    std::cout<<"[Note]: Writting merged train data HDF5..."<<std::endl;
+    saveMatToHDF5(train_data.clone(), train_label.clone(), std::string("merged_train"));
+
+
+    
     std::cout<<"[Note]: Preparing testing data..."<<std::endl;
     prepareData(dog_lbp_data_dir, ofm_data_dir, gray_img_dir,
     			net1, net2, net3,
     			lbp_test_filelist, test,
     			test_data, test_label);
+
+    std::cout<<"merged test data samples: "<<test_data.rows<<" len: "<<test_data.cols<<std::endl;
+    std::cout<<"merged test label samples: "<<test_label.rows<<" len: "<<test_label.cols<<std::endl; 
+    std::cout<<"[Note]: Writting merged test data HDF5..."<<std::endl;
+    saveMatToHDF5(test_data.clone(), test_label.clone(), std::string("merged_test"));
     
+
     return 0;
 }
 
@@ -146,7 +159,7 @@ void prepareData(const std::string& dir1, const std::string& dir2, const std::st
     	if(exists( dir2+subdir+(*it) ) && exists( dir3+subdir+(*it) ) )
     	{
     		// model 1 sample preparation 
-    		std::cout<<"[Note]: Preparing model 1 data..."<<std::endl;
+    		//std::cout<<"[Note]: Preparing model 1 data..."<<std::endl;
     		cv::Mat model1_image, model1_image_resized, model1_input_feature;
     		model1_image = cv::imread( dir1+subdir+(*it), cv::IMREAD_COLOR);
     		cv::resize(model1_image, model1_image_resized, cv::Size(64, 64));
@@ -156,21 +169,21 @@ void prepareData(const std::string& dir1, const std::string& dir2, const std::st
     		}
 
     		// model 2 sample preparation
-    		std::cout<<"[Note]: Preparing model 2 data..."<<std::endl;
+    		//std::cout<<"[Note]: Preparing model 2 data..."<<std::endl;
     		cv::Mat model2_image, model2_image_resized, model2_input_feature;
     		model2_image = cv::imread( dir2+subdir+(*it), cv::IMREAD_GRAYSCALE);
     		cv::resize(model2_image, model2_image_resized, cv::Size(64, 64));
-    		if( ofm_extraction(model2_image_resized, model2_input_feature, 8) )
+    		if( ofm_extraction(model2_image_resized, model2_input_feature, 64, 8) )
     		{
     			continue;
     		}
 
     		// model 3 sample preparation
-    		std::cout<<"[Note]: Preparing model 3 data..."<<std::endl;
+    		//std::cout<<"[Note]: Preparing model 3 data..."<<std::endl;
     		cv::Mat model3_image, model3_image_resized, model3_input_feature;
     		model3_image = cv::imread( dir3+subdir+(*it), cv::IMREAD_GRAYSCALE);
     		cv::resize(model3_image, model3_image_resized, cv::Size(64, 64));
-    		if( gray_lbp_extraction(model3_image_resized, model3_input_feature, 8) )
+    		if( gray_lbp_extraction(model3_image_resized, model3_input_feature, 64, 8) )
     		{
     			continue;
     		}
@@ -178,27 +191,24 @@ void prepareData(const std::string& dir1, const std::string& dir2, const std::st
     		/* merging all inference result into one feature vector */
     		cv::Mat sample_feature_vector;
     		// model 1 inference
-    		std::cout<<"[Note]: Model1 input vector shape: rows: "<<model1_input_feature.rows<<" cols: "<<model1_input_feature.cols<<std::endl;
+    		//std::cout<<"[Note]: Model1 input vector shape: rows: "<<model1_input_feature.rows<<" cols: "<<model1_input_feature.cols<<std::endl;
 			net1.setInput(model1_input_feature);
-			cv::Mat model1_prob = net1.forward();
-			//std::cout<<"[Note]: Ip3 layers id: "<<net1.getLayerId(std::string("ip3"))<<std::endl;
-			cv::Mat model1_result = net1.getParam(net1.getLayerId(std::string("ip3")));
+			cv::Mat model1_result = net1.forward(std::string("ip2"));
+			//cv::Mat model1_result = net1.getParam(net1.getLayerId(std::string("ip3")));
 			sample_feature_vector = mergeCols(sample_feature_vector, model1_result);
 
     		// model 2 inference
-    		std::cout<<"[Note]: Model2 input vector shape: rows: "<<model2_input_feature.rows<<" cols: "<<model2_input_feature.cols<<std::endl;
+    		//std::cout<<"[Note]: Model2 input vector shape: rows: "<<model2_input_feature.rows<<" cols: "<<model2_input_feature.cols<<std::endl;
 			net2.setInput(model2_input_feature);
-			cv::Mat model2_prob = net2.forward();
-			//std::cout<<"[Note]: Ip3 layers id: "<<net1.getLayerId(std::string("ip3"))<<std::endl;
-			cv::Mat model2_result = net2.getParam(net2.getLayerId(std::string("ip3")));
+			cv::Mat model2_result = net2.forward(std::string("ip2"));
+			//cv::Mat model2_result = net2.getParam(net2.getLayerId(std::string("ip3")));
 			sample_feature_vector = mergeCols(sample_feature_vector, model2_result);
 
     		// model 3 inference
-    		std::cout<<"[Note]: Model3 input vector shape: rows: "<<model3_input_feature.rows<<" cols: "<<model3_input_feature.cols<<std::endl;
+    		//std::cout<<"[Note]: Model3 input vector shape: rows: "<<model3_input_feature.rows<<" cols: "<<model3_input_feature.cols<<std::endl;
 			net3.setInput(model3_input_feature);
-			cv::Mat model3_prob = net3.forward();
-			//std::cout<<"[Note]: Ip3 layers id: "<<net1.getLayerId(std::string("ip3"))<<std::endl;
-			cv::Mat model3_result = net3.getParam(net3.getLayerId(std::string("ip3")));
+			cv::Mat model3_result = net3.forward(std::string("ip2"));
+			//cv::Mat model3_result = net3.getParam(net3.getLayerId(std::string("ip3")));
 			sample_feature_vector = mergeCols(sample_feature_vector, model3_result);
 
 			// push back sample
@@ -272,7 +282,7 @@ int dog_lbp_extraction(cv::Mat& img, cv::Mat& feature_vector, const int resize, 
 }
 
 
-int ofm_extraction(cv::Mat& img, cv::Mat& feature_vector, const int cell_size)
+int ofm_extraction(cv::Mat& img, cv::Mat& feature_vector, const int resize, const int cell_size)
 {
 	if(img.empty())
 	{
@@ -280,14 +290,19 @@ int ofm_extraction(cv::Mat& img, cv::Mat& feature_vector, const int cell_size)
 		return 1; 
 	}
 
-	LBP lbp(cv::Size(cell_size, cell_size));
-	lbp.computeLBPFeatureVector(img, feature_vector, LBP::Mode::RIU2);
+	LBP lbp_cell(cv::Size(cell_size, cell_size));
+	LBP lbp_full(cv::Size(resize, resize));
+
+	lbp_cell.computeLBPFeatureVector(img, feature_vector, LBP::Mode::RIU1);
+	cv::Mat full_lbp_hist;
+	lbp_full.computeLBPFeatureVector(img, full_lbp_hist, LBP::Mode::RIU1);
+	feature_vector = mergeCols(feature_vector, full_lbp_hist);
 
 	return 0;
 }
 
 
-int gray_lbp_extraction(cv::Mat& img, cv::Mat& feature_vector, const int cell_size)
+int gray_lbp_extraction(cv::Mat& img, cv::Mat& feature_vector, const int resize, const int cell_size)
 {
 	if(img.empty())
 	{
@@ -295,8 +310,14 @@ int gray_lbp_extraction(cv::Mat& img, cv::Mat& feature_vector, const int cell_si
 		return 1; 
 	}
 
-	LBP lbp(cv::Size(cell_size, cell_size));
-	lbp.computeLBPFeatureVector(img, feature_vector, LBP::Mode::RIU2);
+	LBP lbp_cell(cv::Size(cell_size, cell_size));
+	LBP lbp_full(cv::Size(resize, resize));
+
+	lbp_cell.computeLBPFeatureVector(img, feature_vector, LBP::Mode::RIU1);
+	cv::Mat full_lbp_hist;
+	lbp_full.computeLBPFeatureVector(img, full_lbp_hist, LBP::Mode::RIU1);
+	feature_vector = mergeCols(feature_vector, full_lbp_hist);
+
 
 	return 0;
 }
