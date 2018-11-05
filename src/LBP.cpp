@@ -28,6 +28,30 @@ void LBP::computeLBPImage(const cv::Mat &srcImage, cv::Mat &LBPImage, Mode mode)
         uchar *colOfLBPImage = rowOfLBPImage;
         for (int x = 1; x <= widthOfExtendedImage - 2; ++x,++colOfExtendedImage,++colOfLBPImage)
         {
+            /* this section will do a zero counting on the neighbour pixels,
+               it will mark the center pixel if it found more than 3 black pixels
+               in neighbours, since it might be caused by 0 padding.
+               Comment out this section if you dont want this check */
+            if (mode != BASIC)  // zero checking is not compatible with 256 Bins LBP
+            {
+               int zeroCheck = ( colOfExtendedImage[0] ==0 ) +
+                            ( colOfExtendedImage[0 - widthOfExtendedImage - 1] ==0 ) +
+                            ( colOfExtendedImage[0 - widthOfExtendedImage] ==0) + 
+                            ( colOfExtendedImage[0 - widthOfExtendedImage + 1] ==0 ) +
+                            ( colOfExtendedImage[0 + 1] ==0 ) + 
+                            ( colOfExtendedImage[0 + widthOfExtendedImage + 1] ==0 ) +
+                            ( colOfExtendedImage[0 + widthOfExtendedImage] ==0 ) + 
+                            ( colOfExtendedImage[0 + widthOfExtendedImage - 1] ==0) +
+                            ( colOfExtendedImage[0 - 1]==0 );
+             
+                if (zeroCheck>=3)  
+                {
+                    colOfLBPImage[0] = 255;  //it is a problematic for basic LBP 
+                    continue; 
+                } 
+            }
+            /* END of zero checking section */
+
             // calculate LBP value
             int LBPValue = (  ((colOfExtendedImage[0 - widthOfExtendedImage - 1] >= colOfExtendedImage[0]) << 7)
                             | ((colOfExtendedImage[0 - widthOfExtendedImage] >= colOfExtendedImage[0])     << 6)
@@ -103,6 +127,17 @@ void LBP::computeLBPFeatureVector(const cv::Mat &srcImage, cv::Mat &featureVecto
                 uchar *colOfCell=rowOfCell;
                 for(int x_Cell=0;x_Cell<=cell.cols-1;++x_Cell,++colOfCell)
                 {
+
+                    /* this section will do a zero counting on the neighbour pixels,
+                       it will mark the center pixel if it found more than 3 black pixels
+                       in neighbours, since it might be caused by 0 padding.
+                       Comment out this section if you dont want this check */
+                    if (mode != BASIC && colOfCell[0]==255)   // zero checking is not compatible with 256 Bins mode
+                    {
+                       continue;
+                    }
+                    /* END of zero checking section */
+
                     if(mode!=BASIC) 
                     {
                         if(colOfCell[0]!=0) {
@@ -120,8 +155,17 @@ void LBP::computeLBPFeatureVector(const cv::Mat &srcImage, cv::Mat &featureVecto
             // normalize
             for (int i = 0; i < numberOfBins; ++i)
             {
-                dataOfFeatureVector[index + i] = (mode==BASIC) ? 
-                    (dataOfFeatureVector[index + i]/pixelCount) : (dataOfFeatureVector[index + i]/sum);
+                if (mode==BASIC)
+                {
+                    dataOfFeatureVector[index + i] = dataOfFeatureVector[index + i]/pixelCount;
+                }
+                else
+                {
+                    if(sum > 0)
+                    {
+                        dataOfFeatureVector[index + i] = dataOfFeatureVector[index + i]/sum;
+                    }
+                }
             }
         }
     }
