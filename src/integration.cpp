@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
-
+#include <fstream>
 
 int main(int argc, char** argv)
 {
@@ -150,6 +150,9 @@ void prepareData(const std::string& dir1, const std::string& dir2, const std::st
 		std::cout<<"[ERROR]: "<<subdir <<" filelist empty. please check."<< std::endl;
 		exit(1);
 	}
+
+	std::ofstream file;
+	file.open("sample+softmax.txt", std::ios_base::app); 
 	// setup progress bar
     int total_ticks = filelist.size();
 	ProgressBar progressBar(total_ticks, 70, '=', '-');
@@ -158,6 +161,8 @@ void prepareData(const std::string& dir1, const std::string& dir2, const std::st
     	// proceed only if same sample exisits in all three data directory
     	if(exists( dir2+subdir+(*it) ) && exists( dir3+subdir+(*it) ) )
     	{
+    		file << *it <<": \n";
+    		/*
     		// model 1 sample preparation 
     		//std::cout<<"[Note]: Preparing model 1 data..."<<std::endl;
     		cv::Mat model1_image, model1_image_resized, model1_input_feature;
@@ -167,6 +172,7 @@ void prepareData(const std::string& dir1, const std::string& dir2, const std::st
     		{
     			continue;
     		}
+    		*/
 
     		// model 2 sample preparation
     		//std::cout<<"[Note]: Preparing model 2 data..."<<std::endl;
@@ -190,26 +196,34 @@ void prepareData(const std::string& dir1, const std::string& dir2, const std::st
 
     		/* merging all inference result into one feature vector */
     		cv::Mat sample_feature_vector;
+    		sample_feature_vector = mergeCols(model2_input_feature, model3_input_feature);
+
+    		/*
     		// model 1 inference
     		//std::cout<<"[Note]: Model1 input vector shape: rows: "<<model1_input_feature.rows<<" cols: "<<model1_input_feature.cols<<std::endl;
 			net1.setInput(model1_input_feature);
-			cv::Mat model1_result = net1.forward(std::string("ip2"));
+			cv::Mat model1_result = net1.forward(std::string("prob"));
 			//cv::Mat model1_result = net1.getParam(net1.getLayerId(std::string("ip3")));
 			sample_feature_vector = mergeCols(sample_feature_vector, model1_result);
+			
 
     		// model 2 inference
     		//std::cout<<"[Note]: Model2 input vector shape: rows: "<<model2_input_feature.rows<<" cols: "<<model2_input_feature.cols<<std::endl;
 			net2.setInput(model2_input_feature);
-			cv::Mat model2_result = net2.forward(std::string("ip2"));
+			cv::Mat model2_result = net2.forward(std::string("relu1"));
 			//cv::Mat model2_result = net2.getParam(net2.getLayerId(std::string("ip3")));
 			sample_feature_vector = mergeCols(sample_feature_vector, model2_result);
+			file << "model2 softmax: " << model2_result<<" ";
 
     		// model 3 inference
     		//std::cout<<"[Note]: Model3 input vector shape: rows: "<<model3_input_feature.rows<<" cols: "<<model3_input_feature.cols<<std::endl;
 			net3.setInput(model3_input_feature);
-			cv::Mat model3_result = net3.forward(std::string("ip2"));
+			cv::Mat model3_result = net3.forward(std::string("relu1"));
 			//cv::Mat model3_result = net3.getParam(net3.getLayerId(std::string("ip3")));
 			sample_feature_vector = mergeCols(sample_feature_vector, model3_result);
+			file << "model3 softmax: " << model3_result<<"\n ";
+			*/
+
 
 			// push back sample
 			data.push_back(sample_feature_vector);
@@ -228,6 +242,76 @@ void prepareData(const std::string& dir1, const std::string& dir2, const std::st
 		progressBar.display();
     }
     progressBar.done();
+
+   if(1) 
+    {
+    	if (action==train) {
+
+			std::cout<<"normalize train data feature to N(0,1)..."<<std::endl;
+            vector<float> feature_mean, feature_stddev; 
+
+
+            cv::Mat col0 = data.col(0).clone(); 
+
+            for(int c=0; c<data.cols; c++ ) 
+            {
+               cv::Mat col1 = data.col(c).clone(); 
+               cv::Scalar mean,stddev; //0:1st channel, 1:2nd channel and 2:3rd channel
+               cv::meanStdDev(col1, mean, stddev); 
+               //cout << "col = " << c << " mean = " << mean << " stddev = " << stddev << endl; 
+               col1 = (1.0/stddev[0])*(col1 - mean[0]); 
+               //data.col(c)  = col1;
+               col1.copyTo(data.col(c));
+
+               feature_mean.push_back(mean[0]); 
+               feature_stddev.push_back(stddev[0]); 
+            } 
+
+            /*FILE *fp0 = fopen("debug.txt", "wt");
+            cv::Mat col2 = data.col(0).clone(); 
+            for (int r=0; r<data.rows;r++) 
+               fprintf(fp0,"%f %f\n", col0.at<float>(r,0),col2.at<float>(r,0)); 
+            fclose(fp0);*/  
+
+
+			// save to xml
+			FILE *fp = fopen("mean_stddev.txt", "wt");
+            for(int c=0; c<data.cols; c++ )
+			{
+				fprintf(fp,"%f %f\n",feature_mean[c],feature_stddev[c]); 
+			}
+            fclose(fp); 
+        }
+        else
+        {
+			std::cout<<"normalize test data feature to N(0,1)..."<<std::endl;
+            vector<float> feature_mean, feature_stddev; 
+
+			FILE *fp = fopen("mean_stddev.txt", "rt");
+           
+            for(int c=0; c<data.cols; c++ ) 
+            {
+               float mean, stddev; 
+               fscanf(fp,"%f %f\n",&mean,&stddev); 
+               //cout << "col = " << c << " mean = " << mean << " stddev = " << stddev << endl; 
+               feature_mean.push_back(mean); 
+               feature_stddev.push_back(stddev); 
+            }
+            fclose(fp); 
+
+            for(int c=0; c<data.cols; c++ ) 
+            {
+               cv::Mat col1 = data.col(c).clone(); 
+               col1 = (1.0/feature_stddev[c])*(col1 - feature_mean[c]); 
+               //data.col(c)  = col1;
+               col1.copyTo(data.col(c));
+
+            } 
+
+        }
+    }
+
+    file.close();
 }
 
 
@@ -298,6 +382,16 @@ int ofm_extraction(cv::Mat& img, cv::Mat& feature_vector, const int resize, cons
 	lbp_full.computeLBPFeatureVector(img, full_lbp_hist, LBP::Mode::RIU1);
 	feature_vector = mergeCols(feature_vector, full_lbp_hist);
 
+	// normalize data with pre-calculated means and stdvs
+	std::ifstream infile("thefile.txt");
+	float mean, stdv;
+	float *dataOfFeatureVector=(float *)feature_vector.data;
+	for(int col = 0; col < feature_vector.cols; ++col)
+	{
+		infile >> mean >> stdv;
+		dataOfFeatureVector[col] = (dataOfFeatureVector[col]-mean) / stdv;
+	}
+
 	return 0;
 }
 
@@ -318,6 +412,23 @@ int gray_lbp_extraction(cv::Mat& img, cv::Mat& feature_vector, const int resize,
 	lbp_full.computeLBPFeatureVector(img, full_lbp_hist, LBP::Mode::RIU1);
 	feature_vector = mergeCols(feature_vector, full_lbp_hist);
 
+	// this section normalized the feature vector 
+	// normalize data with pre-calculated means and stdvs
+	std::ifstream infile("thefile.txt");
+	float mean, stdv;
+	// offset the file, starting from 3770
+	int offset;
+	for(offset = 0 ; offset < 3770; ++offset)
+	{
+		infile >> mean >> stdv;
+	}
+
+	float *dataOfFeatureVector=(float *)feature_vector.data;
+	for(int col = offset; col < feature_vector.cols; ++col)
+	{
+		infile >> mean >> stdv;
+		dataOfFeatureVector[col] = (dataOfFeatureVector[col]-mean) / stdv;
+	}
 
 	return 0;
 }
