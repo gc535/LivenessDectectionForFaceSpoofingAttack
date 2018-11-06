@@ -5,9 +5,12 @@ import caffe
 import os
 
 
-def createAutoencoder(hdf5, input_size, batch_size):
+def createAutoencoder(hdf5, input_size, batch_size, phase):
     n = caffe.NetSpec()
-    n.data = L.HDF5Data(batch_size=batch_size, source=hdf5, ntop=1)
+    if phase == "inference":
+        n.data = L.Input(input_param={'shape': {'dim':[1,input_size]}})
+    else:    
+        n.data = L.HDF5Data(batch_size=batch_size, source=hdf5, ntop=1)
     n.ip1 = L.InnerProduct(n.data, num_output=256, weight_filler=dict(type='xavier'))
     n.bottleneck = L.Sigmoid(n.ip1, in_place=True)
     n.decode = L.InnerProduct(n.bottleneck, num_output=input_size, weight_filler=dict(type='xavier'))
@@ -16,9 +19,9 @@ def createAutoencoder(hdf5, input_size, batch_size):
     
     return n.to_proto()
 
-def Solver(model_name, trainModel, testModel, outputDir=None):
+def Solver(model_name, trainModel, testModel, total_samples, train_batch_size, epochs, outputDir=None):
     s = caffe_pb2.SolverParameter()
-    s.solver_mode: CPU
+    s.solver_mode: GPU
     s.random_seed = 0xCAFFE
 
     # Specify locations of the train and (maybe) test networks.
@@ -34,10 +37,10 @@ def Solver(model_name, trainModel, testModel, outputDir=None):
     s.type = "Adam"
 
     # Set the initial learning rate for SGD.
-    s.base_lr = 0.001  # EDIT HERE to try different learning rates      #current best shot: 0.001
+    s.base_lr = 0.00001  # EDIT HERE to try different learning rates      #current best shot: 0.001
     # Set momentum to accelerate learning by
     # taking weighted average of current and previous updates.
-    s.momentum = 0.99
+    s.momentum = 0.90
     # Set weight decay to regularize and prevent overfitting
     s.weight_decay = 5e-4
 
@@ -55,7 +58,7 @@ def Solver(model_name, trainModel, testModel, outputDir=None):
 
     # Snapshots are files used to store networks we've trained.
     # We'll snapshot every 5K iterations -- twice during training.
-    s.snapshot = 25000
+    s.snapshot = epochs*(total_samples//train_batch_size) - 1
     s.snapshot_prefix = model_name
 
     # Train on the GPU

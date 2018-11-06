@@ -1,6 +1,7 @@
 ### core dependency ###
 import cv2
 import caffe
+import h5py
 
 ### system util ###
 import os
@@ -46,45 +47,67 @@ if not os.path.exists('models'):
 cached_dataDir = os.path.join(os.getcwd(), 'data')
 output_model_dir = os.path.join(os.getcwd(), 'models')
 
+
+# finding train/test database file. If not given, default should be in /bin folder after running the C++ executable.
 srcDataDir = os.path.join(os.getcwd(), "../../../bin")
-train_filename = "TrainFeature.txt"
-test_filename = "TestFeature.txt"
+train_data = "train.h5"
+test_data = "test.h5"
 if args["data_directory"]:
-    dataDir = args["data_directory"]
+    srcDataDir = args["data_directory"]
 if args["processed_train"]:
-	train_filename = args["processed_train"]
+    train_data = args["processed_train"]
 if args["processed_test"]:
-	test_filename = args["processed_test"]
-train_filepath = os.path.join(srcDataDir, train_filename)
-test_filepath = os.path.join(srcDataDir, test_filename)
+    test_data = args["processed_test"]
+train_data_filepath = os.path.join(srcDataDir, train_data)
+test_data_filepath = os.path.join(srcDataDir, test_data)
+print("using train data: ", train_data_filepath)
+print("using test data: ", test_data_filepath)
+train_file = h5py.File(train_data_filepath, 'r')
+test_file = h5py.File(test_data_filepath, 'r')
 
-### load processed data and export to H5PY
-print("[Note]: Loading processed training data from txt file to generate training set...")
-train, train_vector_len = importFromTXT(train_filepath)
-trainData = exportH5PY_featureonly(train, train_filename[:-4], cached_dataDir)
 
-print("[Note]: Loading processed testing data from txt file to generate testing set...")
-test, test_vector_len = importFromTXT(test_filepath)
-testData = exportH5PY_featureonly(test, test_filename[:-4], cached_dataDir)
+train_data_len = len(train_file['data'])
+feature_vector_len = len(train_file['data'][0])
+test_data_len = len(test_file['data'])
+print ("num of samples: ", train_data_len, "sample vector length: ", feature_vector_len)
 
-assert(train_vector_len == test_vector_len)
+if not os.path.exists(train_data_filepath) or not os.path.exists(test_data_filepath):
+    print("[Error]: Expecting  processed train and test data file exists in the directory, but at least one is missing. Action aborted.")
+    exit(1)
+
+
+# prepare data source path for training
+train_path_txt = os.path.join(cached_dataDir, 'train_path.txt')
+test_path_txt = os.path.join(cached_dataDir, 'test_path.txt')
+with open(train_path_txt, 'w') as f:
+    print(train_data_filepath, file=f)
+with open(test_path_txt, 'w') as f:
+    print(test_data_filepath, file=f)
+
 
 print("[Note]: Generate and compile autoencoder model...")
 # model path
-modelName = train_filename[:-4]+"Autoencoder"
+modelName = train_data[:-3]+"Autoencoder"
 trainModel = os.path.join(output_model_dir, modelName+'_train.prototxt')
 testModel = os.path.join(output_model_dir, modelName+'_test.prototxt')
+inferenceModel = os.path.join(output_model_dir, modelName+'_deploy.prototxt')
+
+
 
 ### prepare model and sovler
 caffe.set_mode_cpu()
 with open(trainModel, 'w') as f:
-    f.write(str(createAutoencoder(trainData, train_vector_len, train_batch_size)))
+    f.write(str(createAutoencoder(train_path_txt, feature_vector_len, train_batch_size, 'train')))
 
 with open(testModel, 'w') as f:
-    f.write(str(createAutoencoder(testData, test_vector_len, test_batch_size)))
+    f.write(str(createAutoencoder(test_path_txt, feature_vector_len, test_batch_size, 'test')))
+
+with open(inferenceModel, 'w') as f:
+    f.write(str(createAutoencoder(test_path_txt, feature_vector_len, test_batch_size, 'inference')))
+
 
 print("[Note]: Configuring the optimizer...")
-solver_path = Solver(modelName, trainModel, testModel, output_model_dir)
+solver_path = Solver(modelName, trainModel, testModel, train_data_len, train_batch_size, epochs, output_model_dir)
 solver = caffe.get_solver(solver_path)
 
 print("[Note]: Start training...")
@@ -92,7 +115,7 @@ print("[Note]: Start training...")
 monitor = Monitor()
 for e in range(epochs):
     print("starting new epoch...")
-    solver.step(train_vector_len//train_batch_size)
+    solver.step(train_data_len//train_batch_size)
 
     print('epoch: ', e, 'testing...')
     loss = solver.net.blobs['loss'].data[()]
