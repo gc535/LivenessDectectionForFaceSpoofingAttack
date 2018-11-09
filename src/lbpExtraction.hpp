@@ -14,6 +14,9 @@ enum Action
 
 
 void printHelp();
+void parseArguments(const int& argc, const char* const* argv,
+					int& resize, int& cellsize, std::string& train_list, std::string& test_list, Action& action);
 void DOG_LBP(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filelist, int resize, int cellsize);
+void test(cv::Mat, cv::Mat, cv::Ptr<cv::ml::SVM>);
 
 #endif //LBP_EXTRACTION_HPP

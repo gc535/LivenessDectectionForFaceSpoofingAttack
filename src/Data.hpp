@@ -21,16 +21,16 @@ public:
 	};
 
 private:
-	std::string _dirPath;
+	std::string _filelist_path;
 	Action _action;
 	std::vector<std::string> _filelist;
 
 
 public: 
 	Data(){}
-	Data(const std::string path, Action action)
+	Data(const std::string filelist_path, Action action)
 	{
-		_dirPath = path; 
+		_filelist_path = filelist_path; 
 		_action = action;
 		updateFileList();
 	}
@@ -82,10 +82,8 @@ public:
 
 	//void DataPreparation(void (*method)(cv::Mat&, cv::Mat&, const std::vector<std::string>& ), cv::Mat& data, cv::Mat& label);
 	
-	void changePath(const std::string path){_dirPath = path;}
 	void changeAction(Action action){_action = action;}
-	
-	void update(const std::string path, Action action);
+	void update(const std::string filstlist_path, Action action);
 	
 
 private:

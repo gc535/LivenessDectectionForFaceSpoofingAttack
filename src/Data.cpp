@@ -18,7 +18,8 @@
 #include <fstream>
 
 int Data::updateFileList()
-{
+{   
+    /* this method is updated with filelist reading
     DIR *dp;
     struct dirent *filePath;
     if((dp  = opendir(_dirPath.c_str())) == NULL) {
@@ -37,12 +38,24 @@ int Data::updateFileList()
     	}
     }
     closedir(dp);
+    */
+    if(!exists(_filelist_path)){
+        std::cout << "[ERROR]: Error(" << errno << ") opening " << _filelist_path << std::endl;
+        return errno;
+    }
+
+    std::ifstream files(_filelist_path);
+    _filelist.clear(); //clear old file list
+    std::string file;
+    while(files >> file ){
+        _filelist.push_back(file);
+    }
     return 0;
 }
 
-void Data::update(const std::string path, Action action)
+void Data::update(const std::string filelist_path, Action action)
 {
-	_dirPath = path; 
+	_filelist_path = filelist_path; 
 	_action = action;
 	updateFileList();
 }

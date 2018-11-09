@@ -14,68 +14,18 @@
 #include <iostream>
 #include <errno.h>
 
-
-//#include <Util.hpp>
-
-void test(cv::Mat, cv::Mat, cv::Ptr<cv::ml::SVM>);
-
 int main(int argc, char** argv)
 {
 	int resize = 96;
 	int cellsize = 16;
 	Action action = TRAIN;
-	std::string dataDir = std::string("..");
-
-	if( argc <= 2 ) {
-		printHelp();
-		exit( 1 );
-	}
-	else if( argc > 2 ) {
-		// process arguments
-		for( int i = 1; i < argc - 1; i++ ) {
-			if( strcmp( argv[i], "-d" ) == 0 ) {
-				dataDir = argv[i + 1];
-				i++;
-			}
-			else if( strcmp( argv[i], "-r" ) == 0 ) {
-				resize = atoi( argv[i + 1] );
-				i++;
-			}
-			else if( strcmp( argv[i], "-c" ) == 0 ) {
-				cellsize = atoi( argv[i + 1] );
-				i++;
-			}
-			else if( strcmp( argv[i], "-a" ) == 0 ) {
-				if( strcmp( argv[i+1], "test" ) == 0 )
-				{
-					action = TEST;
-				}
-				else if( strcmp( argv[i+1], "train" ) == 0 )
-				{
-					action = TRAIN;
-				}
-				else
-				{
-					std::cout<<"[ERROR]: Invalid action. Action can only be 'train' or 'test'."<<std::endl;
-					std::cout<<"\t\t\t Execution aborted."<<std::endl;
-					exit( 1 );
-				}
-				i++;
-			}
-			else {
-				std::cerr << "invalid argument: \'" << argv[i] << "\'\n";
-				printHelp();
-				exit( 1 );
-			}
-		}
-	}
-	std::string trainDir = dataDir+"/train/";
-	std::string testDir = dataDir+"/test/";
-	std::string tmpDir = dataDir+"/tmp/";
+	std::string train_list = "", test_list = "";
+	parseArguments(argc, argv,
+				   resize, cellsize, train_list, test_list, action);
 
 	std::cout<<"[Note]: Starting data preparation phase..."<<std::endl;
 	// prepare train data
-	Data data(trainDir, Data::Action::TRAIN);
+	Data data(train_list, Data::Action::TRAIN);
 	cv::Mat train_data, train_label;
 	if(action != TEST)
 	{
@@ -83,7 +33,7 @@ int main(int argc, char** argv)
 	}
 	
 	// prepare test data
-	data.update(testDir, Data::Action::TEST);
+	data.update(test_list, Data::Action::TEST);
 	cv::Mat test_data, test_label;
 	data.DataPreparation(DOG_LBP, test_data, test_label, "dog_lbp", resize, cellsize);
 
@@ -146,14 +96,6 @@ void test(cv::Mat test_data, cv::Mat test_label, cv::Ptr<cv::ml::SVM> svm)
 	std::cout<<"[Note]: Current model accuracy is: " << float(correct)/count*100 << "%" << std::endl;
 }
 
-void printHelp() {
-	std::cout << "\nUsage: ./lbp [options]" << std::endl;
-	std::cout << "\nOptions:" << std::endl;
-	std::cout << "\t-r <int> - Target resize size (default=96)" << std::endl;
-	std::cout << "\t-c <int> - Desired cell size for LBP extraction (default=16)" << std::endl;
-	std::cout << "\t-d <string> - Specificy a path to the root of data directory: (default=none)" << std::endl;
-	std::cout << "\t \t \tData root should contain a two sub folder: 'train' and 'test" << std::endl;
-}
 
 void DOG_LBP(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filelist, int resize, int cellsize )
 {
@@ -226,4 +168,72 @@ void DOG_LBP(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& file
 	}
 	progressBar.done();
 
+}
+
+void parseArguments(const int& argc, const char* const* argv,
+					int& resize, int& cellsize, std::string& train_list, std::string& test_list, Action& action)
+{
+	if( argc <= 2 ) {
+		printHelp();
+		exit( 1 );
+	}
+	else if( argc > 2 ) {
+		// process arguments
+		for( int i = 1; i < argc - 1; i++ ) {
+			if( strcmp( argv[i], "-t" ) == 0 ) {
+				train_list = argv[i + 1];
+				i++;
+			}
+			else if( strcmp( argv[i], "-v" ) == 0 ){
+				test_list = argv[i + 1];
+				i++;
+
+			}
+			else if( strcmp( argv[i], "-r" ) == 0 ) {
+				resize = atoi( argv[i + 1] );
+				i++;
+			}
+			else if( strcmp( argv[i], "-c" ) == 0 ) {
+				cellsize = atoi( argv[i + 1] );
+				i++;
+			}
+			else if( strcmp( argv[i], "-a" ) == 0 ) {
+				if( strcmp( argv[i+1], "test" ) == 0 )
+				{
+					action = TEST;
+				}
+				else if( strcmp( argv[i+1], "train" ) == 0 )
+				{
+					action = TRAIN;
+				}
+				else
+				{
+					std::cout<<"[ERROR]: Invalid action. Action can only be 'train' or 'test'."<<std::endl;
+					std::cout<<"\t\t\t Execution aborted."<<std::endl;
+					exit( 1 );
+				}
+				i++;
+			}
+			else {
+				std::cerr << "invalid argument: \'" << argv[i] << "\'\n";
+				printHelp();
+				exit( 1 );
+			}
+		}
+	}
+	if (train_list == "" or test_list == ""){
+		printHelp();
+		exit( 1 );
+	}
+
+}
+
+void printHelp() {
+	std::cout << "\nUsage: ./lbp [options]" << std::endl;
+	std::cout << "\nOptions:" << std::endl;
+	std::cout << "\t-r <int> - Target resize size (default=96)" << std::endl;
+	std::cout << "\t-c <int> - Desired cell size for LBP extraction (default=16)" << std::endl;
+	std::cout << "\t-t <string> - Path to a txt file contains a list of training data" << std::endl;
+	std::cout << "\t-v <string> - Path to a txt file contains a list of testing data" << std::endl;
+	std::cout << "\t-a <string> - action parameters: train/test. ('train' will run both train and test, 'test' will only run test)" << std::endl;
 }
