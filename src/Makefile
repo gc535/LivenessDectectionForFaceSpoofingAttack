@@ -30,6 +30,13 @@ _OFM_SRCS := OFM.cpp
 _OFM_OBJS := $(_OFM_SRCS:.cpp=.o)
 OFM_OBJS := $(patsubst %, $(ODIR)/%,$(_OFM_OBJS))
 
+# binary for fft_dog data preparation
+FFT_DOG = ${PROJECT_HOME}/bin/fft_dog
+
+_FFT_DOG_SRCS := FFT_DOG.cpp
+_FFT_DOG_OBJS := $(_FFT_DOG_SRCS:.cpp=.o)
+FFT_DOG_OBJS := $(patsubst %, $(ODIR)/%,$(_FFT_DOG_OBJS))
+
 # binary for data merging
 INTEGRATION = ${PROJECT_HOME}/bin/integration
 
@@ -38,18 +45,22 @@ _INTEGRATION_OBJ = $(_INTEGRATION_SRC:.cpp=.o)
 INTEGRATION_OBJ = $(patsubst %, $(ODIR)/%,$(_INTEGRATION_OBJ))
 
 
-.PHONY: all lbpdata ofmdata integration
+.PHONY: all lbpdata ofmdata fft_dog integration
 
-all: lbpdata ofmdata integration
+all: lbpdata ofmdata fft_dog integration
 
 lbpdata: $(LBP)
 ofmdata: $(OFM)
+fft_dog: $(FFT_DOG)
 integration: $(INTEGRATION)
 
 $(LBP): $(LBP_OBJS) $(COMMON_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS) 
 
 $(OFM): $(OFM_OBJS) $(COMMON_OBJS)
+	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS)
+
+$(FFT_DOG): $(FFT_DOG_OBJS) $(COMMON_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS)
 
 $(INTEGRATION): $(INTEGRATION_OBJ) $(COMMON_OBJS)
@@ -63,5 +74,5 @@ print-%  : ; @echo $* = $($*)
 
 
 clean:
-	rm -f $(INTEGRATION) $(LBP) $(OFM) ./obj/*.o
+	rm -f $(INTEGRATION) $(FFT_DOG) $(LBP) $(OFM) ./obj/*.o
 
