@@ -7,7 +7,7 @@ CFLAGS = -O0 -std=c++11 -I$(IDIR)
 #OPENCV_PATH=/usr/local/lib
 OPENCV_PATH=/usr/local/lib
 
-LIBFLAGS = -L${OPENCV_PATH} -lopencv_hdf -lopencv_ml -lopencv_dnn -lopencv_imgcodecs -lopencv_imgproc -lopencv_core 
+LIBFLAGS = -L${OPENCV_PATH} -lopencv_hdf -lopencv_ml -lopencv_dnn -lopencv_highgui -lopencv_imgcodecs -lopencv_imgproc -lopencv_core 
 ODIR=obj
 
 
