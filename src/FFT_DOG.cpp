@@ -92,7 +92,8 @@ void FFTDOG(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filel
 		cv::resize(srcImg, resizedImg, cv::Size(resize, resize));
 		cv::Mat sample_dog_fft;
 		sample_dog_fft = single_FFTDOG(resizedImg, sigma1, sigma2);
-		//std::cout<<sample_dog_fft<<std::endl;
+
+		// checking dft result image
 		cv::imshow( "dft image", sample_dog_fft );                   // Show our image inside it.
 
     	cv::waitKey(0);
@@ -147,16 +148,42 @@ cv::Mat single_FFTDOG(cv::Mat srcImg, double sigma1, double sigma2)
 	DXF = XF1 - XF2;
 	
 	// Discrete Fourier Transform
-	DXF.convertTo(DXF, CV_64FC1);
-	cv::dft(DXF, output);
-	//cv::namedWindow( "origin image", cv::WINDOW_AUTOSIZE );// Create a window for display.
-    //cv::imshow( "origin image", srcImg );                   // Show our image inside it.
-    //cv::namedWindow( "dft image", cv::WINDOW_AUTOSIZE );// Create a window for display.
-    //cv::imshow( "dft image", DXF );                   // Show our image inside it.
+	// pad the image for best performance
+	cv::Mat PadDXF;
+	int row = cv::getOptimalDFTSize( DXF.rows );
+	int col = cv::getOptimalDFTSize( DXF.cols );
+	cv::copyMakeBorder(DXF, PadDXF, 0, row - DXF.rows, 0, col - DXF.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+	// create 2 channel Mat to store real and imaginary part of the dft result
+	cv::Mat planes[] = {cv::Mat_<float>(PadDXF), cv::Mat::zeros(PadDXF.size(), CV_32F)};
+	cv::Mat complex;
+	cv::merge(planes, 2, complex);
+	cv::dft(complex, complex);
+	// calcualte the dft respond magnitude
+	split(complex, planes);
+	cv::magnitude(planes[0], planes[1], planes[0]);
+	cv::Mat dftMag = planes[0];
+	dftMag += cv::Scalar::all(1);                    // switch to logarithmic scale
+    log(dftMag, dftMag);
 
-    //cv::waitKey(0);
-	//std::cout<<output<<std::endl;
-	return abs(output);
+	// crop the spectrum, if it has an odd number of rows or columns
+    dftMag = dftMag(cv::Rect(0, 0, dftMag.cols & -2, dftMag.rows & -2));
+    // rearrange the quadrants of Fourier image  so that the origin is at the image center
+    int cx = dftMag.cols/2;
+    int cy = dftMag.rows/2;
+    cv::Mat q0(dftMag, cv::Rect(0, 0, cx, cy));   // Top-Left - Create a ROI per quadrant
+    cv::Mat q1(dftMag, cv::Rect(cx, 0, cx, cy));  // Top-Right
+    cv::Mat q2(dftMag, cv::Rect(0, cy, cx, cy));  // Bottom-Left
+    cv::Mat q3(dftMag, cv::Rect(cx, cy, cx, cy)); // Bottom-Right
+    cv::Mat tmp;                           // swap quadrants (Top-Left with Bottom-Right)
+    q0.copyTo(tmp);
+    q3.copyTo(q0);
+    tmp.copyTo(q3);
+    q1.copyTo(tmp);                    // swap quadrant (Top-Right with Bottom-Left)
+    q2.copyTo(q1);
+    tmp.copyTo(q2);
+    cv::normalize(dftMag, dftMag, 0, 1, cv::NORM_MINMAX); // Transform the matrix with float values into a
+
+	return dftMag;
 }
 
 
