@@ -94,9 +94,9 @@ testModel = os.path.join(output_model_dir, modelName+'_test.prototxt')
 inferenceModel = os.path.join(output_model_dir, modelName+'_deploy.prototxt')
 
 ### prepare model and sovler
-caffe.set_mode_cpu()
-#caffe.set_device(0)
-#caffe.set_mode_gpu()
+#caffe.set_mode_cpu()
+caffe.set_device(0)
+caffe.set_mode_gpu()
 with open(trainModel, 'w') as f:
     f.write(str(MLP(train_path_txt, train_batch_size, feature_vector_len, 'train')))
 
@@ -118,15 +118,48 @@ for e in range(epochs):
     solver.step(train_data_len//train_batch_size)
 
     print('epoch: ', e, 'testing...')
-    loss = solver.net.blobs['loss'].data[()]
+    loss = solver.net.blobs['loss'].data[()]                # train loss
+    train_acc = solver.net.blobs['accuracy'].data[()]       # train accuracy
+
+    # test while in train and calculate accuracy
     correct = 0
+    correct1, correct2, correct3 = 0, 0, 0
     for test_it in range(3):
         solver.test_nets[0].forward()
         correct += sum(solver.test_nets[0].blobs['prob'].data.argmax(1)
                        == solver.test_nets[0].blobs['label'].data.squeeze())
-    print(correct)
-    accuracy = correct/test_batch_size/3
-    monitor.update(loss, accuracy)
-    print("current loss: %f, current accuracy: %f" % (loss, accuracy)) 
+
+        #correct1 += sum(solver.test_nets[0].blobs['data'].data[:, 0:2].argmax(1)
+        #                == solver.test_nets[0].blobs['label'].data.squeeze())
+        #correct2 += sum(solver.test_nets[0].blobs['data'].data[:, 2:4].argmax(1)
+        #                == solver.test_nets[0].blobs['label'].data.squeeze())
+        #correct3 += sum(solver.test_nets[0].blobs['data'].data[:, 4:6].argmax(1)
+        #                == solver.test_nets[0].blobs['label'].data.squeeze())
+        #print(solver.test_nets[0].blobs['data'].data)
+        #print(solver.test_nets[0].blobs['label'].data)
+
+    """
+    # write log to txt
+    f = open("log1.txt", "a")
+    num_of_samples = len(solver.test_nets[0].blobs['data'].data)
+    for i in range(num_of_samples):
+        softmaxs = [solver.test_nets[0].blobs['data'].data[i][:2], \
+                    solver.test_nets[0].blobs['data'].data[i][2:4], \
+                    #solver.test_nets[0].blobs['data'].data[i][4:6].argmax(0), \
+                    solver.test_nets[0].blobs['prob'].data[i].argmax(0), \
+                    solver.test_nets[0].blobs['label'].data[i]]
+        f.write(" ".join(str(x) for x in softmaxs))
+        f.write("\n")
+    #accuracy1 = correct1/test_batch_size/3
+    #accuracy2 = correct2/test_batch_size/3
+    #accuracy3 = correct3/test_batch_size/3
+    f.write("accuracy1: %f, accuracy2: %f\n" % (accuracy1, accuracy2))
+    f.close()
+    """
+
+    #print(correct)
+    test_acc = correct/test_batch_size/3
+    monitor.update(loss, train_acc, test_acc)
+    print("current loss: %f, current train accuracy: %f, current test accuracy: %f. " % (loss, train_acc, test_acc)) 
 
 input('press "enter" to exit the program.')

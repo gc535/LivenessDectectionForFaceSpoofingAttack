@@ -7,21 +7,24 @@ class Monitor(object):
     def __init__(self):
         self.i = 0
         self.x = []
-        self.accuracy = []
+        self.train_acc = []
+        self.test_acc = []
         self.losses = []
         self.fig = plt.figure()
         plt.ion()
         
         
-    def update(self, loss, accuracy):
+    def update(self, loss, train_acc, test_acc):
         self.x.append(self.i)
         self.losses.append(loss)
-        self.accuracy.append(accuracy)
+        self.train_acc.append(train_acc)
+        self.test_acc.append(test_acc)
         self.i += 1
 
         plt.gcf().clear()
         plt.plot(self.x, self.losses, label="loss")
-        plt.plot(self.x, self.accuracy, label="accuracy")
+        plt.plot(self.x, self.train_acc, label="train accuracy")
+        plt.plot(self.x, self.test_acc, label="test accuracy")
         plt.legend()
         plt.draw()
         plt.pause(0.001)
