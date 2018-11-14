@@ -3,18 +3,79 @@
 int main(int argc, char** argv)
 {	
 	int resize = 96, cellsize = 16;
-	double sigma1 = 1, sigma2 = 2;
+	double sigma1 = 0.5, sigma2 = 1;
 	std::string train_list = "", test_list = "";
 	parseArguments(argc, argv,
 				   resize, cellsize, train_list, test_list);
 
+	// prepare train data
 	Data data(train_list, Data::Action::TRAIN);
 	cv::Mat train_data, train_label;
 	data.DataPreparation(FFTDOG, train_data, train_label, "fft_dog", resize, cellsize, sigma1, sigma2);
 
+	// prepare test data
+	data.update(test_list, Data::Action::TEST);
+	cv::Mat test_data, test_label;
+	data.DataPreparation(FFTDOG, test_data, test_label, "fft_dog", resize, cellsize, sigma1, sigma2);
+
+
+	// test svm 
+	std::cout<<"[Note]: Starting model traning phase..."<<std::endl;
+	cv::Ptr<cv::ml::SVM> svm = cv::ml::SVM::create();
+	// training 
+	if(!exists("liveness_svm.xml"))
+	{
+		svm->setType(cv::ml::SVM::Types::C_SVC);
+	  	svm->setKernel(cv::ml::SVM::KernelTypes::RBF);
+	  	svm->setTermCriteria(cv::TermCriteria(cv::TermCriteria::MAX_ITER,100,1e-6));
+	  	std::cout << "[Note]: Training SVM......" << std::endl;
+	  	try 
+	  	{
+			//svm = StatModel::train<SVM>(train_feature, ROW_SAMPLE, train_label, params);//train SVM
+			svm->train(train_data, cv::ml::SampleTypes::ROW_SAMPLE, train_label);
+	  		std::cout << "[Note]: Training finished......" << std::endl;
+	  		svm->save("liveness_svm.xml");
+	  	} 
+	  	catch (cv::Exception& e) 
+	  	{
+			std::cout << e.msg;
+	  	}
+	}
+	else
+	{
+		std::cout << "[Note]: Pre-trained SVM model found in the current directory, load it from file......" << std::endl;
+		svm = cv::Algorithm::load<cv::ml::SVM>("liveness_svm.xml");
+	}
+  	std::cout<<"[Note]: Model traning phase complete!"<<std::endl;
+
+
+	std::cout<<"[Note]: Starting model testing phase..."<<std::endl;
+  	std::cout<<"[Note]: Test set size: "<<test_data.rows<<" samples"<< std::endl;
+  	test(test_data, test_label, svm);
+
 	return 0;
 }
 
+void test(cv::Mat test_data, cv::Mat test_label, cv::Ptr<cv::ml::SVM> svm)
+{
+	CV_Assert(test_data.rows == test_label.rows && test_data.rows>0);
+
+	std::cout << "[Note]: Start Testing......" << std::endl;
+	int count = 0;
+	int correct = 0;
+	ProgressBar progressBar(test_data.rows, 70, '=', '-');
+	for(int r = 0; r < test_data.rows; ++r)
+	{
+		int response = svm->predict(test_data.row(r));
+		//std::cout<<"response: "<< response << ", expected: " <<  test_label.at<int>(r, 0) << std::endl;
+		if (response == test_label.at<int>(r, 0)) correct++;
+		count++;
+		++progressBar;
+		progressBar.display();
+	}
+	progressBar.done();
+	std::cout<<"[Note]: Current model accuracy is: " << float(correct)/count*100 << "%" << std::endl;
+}
 
 // batch data preparation with single_FFTDOG
 void FFTDOG(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filelist, 
@@ -31,9 +92,28 @@ void FFTDOG(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filel
 		cv::resize(srcImg, resizedImg, cv::Size(resize, resize));
 		cv::Mat sample_dog_fft;
 		sample_dog_fft = single_FFTDOG(resizedImg, sigma1, sigma2);
+		//std::cout<<sample_dog_fft<<std::endl;
+		cv::imshow( "dft image", sample_dog_fft );                   // Show our image inside it.
 
+    	cv::waitKey(0);
+		//double min, max;
+		//minMaxLoc(sample_dog_fft, &min, &max);
+		//std::cout << min << ", "<< max << std::endl;
+		//flatten and normalzie the fft image
+		int image_size = sample_dog_fft.rows * sample_dog_fft.cols;
+		cv::Mat flattened = cv::Mat(1, image_size, CV_32F);
+		for(int r = 0; r < sample_dog_fft.rows; ++r)
+		{
+			for(int c = 0; c < sample_dog_fft.cols; ++c)
+			{	
+				//std::cout<<sample_dog_fft.at<double>(r, c) << "/"<<image_size<<"=" <<sample_dog_fft.at<double>(r, c)/image_size<<std::endl;
+				// normalzied fft response with total pixel count and saturate above 1. 
+				flattened.at<float>(r*sample_dog_fft.cols + c) = std::min(1.0, sample_dog_fft.at<double>(r, c)/image_size);
+			}
+		}
+		//std::cout<<flattened<<std::endl;
 		// push back sample
-		data.push_back(sample_dog_fft);
+		data.push_back(flattened);
 
 		/* prepare label feature vector */
 		if((*it).find("fake") != std::string::npos)  
@@ -65,9 +145,17 @@ cv::Mat single_FFTDOG(cv::Mat srcImg, double sigma1, double sigma2)
 	cv::GaussianBlur(srcImg, XF2, cv::Size(size2, size2), sigma2, sigma2, cv::BORDER_REPLICATE);
 	// Difference
 	DXF = XF1 - XF2;
+	
 	// Discrete Fourier Transform
 	DXF.convertTo(DXF, CV_64FC1);
 	cv::dft(DXF, output);
+	//cv::namedWindow( "origin image", cv::WINDOW_AUTOSIZE );// Create a window for display.
+    //cv::imshow( "origin image", srcImg );                   // Show our image inside it.
+    //cv::namedWindow( "dft image", cv::WINDOW_AUTOSIZE );// Create a window for display.
+    //cv::imshow( "dft image", DXF );                   // Show our image inside it.
+
+    //cv::waitKey(0);
+	//std::cout<<output<<std::endl;
 	return abs(output);
 }
 
