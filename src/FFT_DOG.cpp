@@ -11,12 +11,12 @@ int main(int argc, char** argv)
 	// prepare train data
 	Data data(train_list, Data::Action::TRAIN);
 	cv::Mat train_data, train_label;
-	data.DataPreparation(FFTDOG, train_data, train_label, "fft_dog", resize, cellsize, sigma1, sigma2);
+	data.DataPreparation(findFrequencyRepond, train_data, train_label, "fft_dog", resize, cellsize, sigma1, sigma2);
 
 	// prepare test data
 	data.update(test_list, Data::Action::TEST);
 	cv::Mat test_data, test_label;
-	data.DataPreparation(FFTDOG, test_data, test_label, "fft_dog", resize, cellsize, sigma1, sigma2);
+	data.DataPreparation(findFrequencyRepond, test_data, test_label, "fft_dog", resize, cellsize, sigma1, sigma2);
 
 
 	// test svm 
@@ -77,8 +77,8 @@ void test(cv::Mat test_data, cv::Mat test_label, cv::Ptr<cv::ml::SVM> svm)
 	std::cout<<"[Note]: Current model accuracy is: " << float(correct)/count*100 << "%" << std::endl;
 }
 
-// batch data preparation with single_FFTDOG
-void FFTDOG(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filelist, 
+// calculate the everage enegery response at each discrete frequency
+void findFrequencyRepond(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filelist, 
 		    const int resize, const int cellsize, const double sigma1, const double sigma2)
 {
 	cv::Mat srcImg;
@@ -91,30 +91,44 @@ void FFTDOG(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filel
 		srcImg = cv::imread(*it, cv::IMREAD_GRAYSCALE);
 		cv::resize(srcImg, resizedImg, cv::Size(resize, resize));
 		cv::Mat sample_dog_fft;
-		sample_dog_fft = single_FFTDOG(resizedImg, sigma1, sigma2);
+		sample_dog_fft = FFTDOG(resizedImg, sigma1, sigma2);
 
 		// checking dft result image
-		cv::imshow( "dft image", sample_dog_fft );                   // Show our image inside it.
-
-    	cv::waitKey(0);
-		//double min, max;
-		//minMaxLoc(sample_dog_fft, &min, &max);
-		//std::cout << min << ", "<< max << std::endl;
-		//flatten and normalzie the fft image
-		int image_size = sample_dog_fft.rows * sample_dog_fft.cols;
-		cv::Mat flattened = cv::Mat(1, image_size, CV_32F);
+		//std::cout<<"dftimage size:"<< sample_dog_fft.rows<< "," << sample_dog_fft.cols <<std::endl;
+		//cv::imshow( "dft image", sample_dog_fft );                   // Show our image inside it.
+    	//cv::waitKey(0); 
+		
+		// note: please use square image: eg. 64*64 
+		CV_Assert(sample_dog_fft.rows == sample_dog_fft.cols);
+		// Allocate frequencey historgram bin: contains sample_dog_fft.rows number of bins
+		// representing sample_dog_fft.row number of discrete frequency
+		cv::Mat fr_bin = cv::Mat::zeros(cv::Size(1, sample_dog_fft.rows+1), CV_32F); // add one extra bin to store all high frequency 
+		cv::Mat bin_cnt = cv::Mat::zeros(cv::Size(1, sample_dog_fft.rows+1), CV_32F);
+		// define the center of the image
+		std::pair<int, int> center(sample_dog_fft.rows/2, sample_dog_fft.cols/2); 
 		for(int r = 0; r < sample_dog_fft.rows; ++r)
 		{
 			for(int c = 0; c < sample_dog_fft.cols; ++c)
 			{	
-				//std::cout<<sample_dog_fft.at<double>(r, c) << "/"<<image_size<<"=" <<sample_dog_fft.at<double>(r, c)/image_size<<std::endl;
-				// normalzied fft response with total pixel count and saturate above 1. 
-				flattened.at<float>(r*sample_dog_fft.cols + c) = std::min(1.0, sample_dog_fft.at<double>(r, c)/image_size);
+				int distance = sqrt( std::pow((r-center.first), 2) + std::pow((c-center.second), 2) );
+				//std::cout<< "ditance:" << distance << " pairs: " << std::pow((r-center.first), 2) <<", " <<std::pow((c-center.second), 2) << std::endl;
+				if(distance > sample_dog_fft.rows) // high frequency
+				{
+					bin_cnt.at<float>(sample_dog_fft.rows) += 1;
+					fr_bin.at<float>(sample_dog_fft.rows) += sample_dog_fft.at<float>(r, c);
+				} 
+				else  // low frequency 
+				{
+					bin_cnt.at<float>(distance) += 1;
+					fr_bin.at<float>(distance) += sample_dog_fft.at<float>(r, c);
+				}
 			}
 		}
-		//std::cout<<flattened<<std::endl;
+		fr_bin = fr_bin / bin_cnt;
+
+		//std::cout<<fr_bin<<std::endl;
 		// push back sample
-		data.push_back(flattened);
+		data.push_back(fr_bin);
 
 		/* prepare label feature vector */
 		if((*it).find("fake") != std::string::npos)  
@@ -134,7 +148,7 @@ void FFTDOG(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filel
 }
 
 // FFT on DOG Features
-cv::Mat single_FFTDOG(cv::Mat srcImg, double sigma1, double sigma2)
+cv::Mat FFTDOG(cv::Mat srcImg, double sigma1, double sigma2)
 {
 	cv::Mat XF1, XF2, DXF, output;
 	int size1, size2;
@@ -162,8 +176,9 @@ cv::Mat single_FFTDOG(cv::Mat srcImg, double sigma1, double sigma2)
 	split(complex, planes);
 	cv::magnitude(planes[0], planes[1], planes[0]);
 	cv::Mat dftMag = planes[0];
-	dftMag += cv::Scalar::all(1);                    // switch to logarithmic scale
-    log(dftMag, dftMag);
+	
+	//dftMag += cv::Scalar::all(1);                    // switch to logarithmic scale
+    //log(dftMag, dftMag);
 
 	// crop the spectrum, if it has an odd number of rows or columns
     dftMag = dftMag(cv::Rect(0, 0, dftMag.cols & -2, dftMag.rows & -2));
@@ -181,6 +196,7 @@ cv::Mat single_FFTDOG(cv::Mat srcImg, double sigma1, double sigma2)
     q1.copyTo(tmp);                    // swap quadrant (Top-Right with Bottom-Left)
     q2.copyTo(q1);
     tmp.copyTo(q2);
+    
     cv::normalize(dftMag, dftMag, 0, 1, cv::NORM_MINMAX); // Transform the matrix with float values into a
 
 	return dftMag;

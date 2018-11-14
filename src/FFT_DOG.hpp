@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <cmath>
 
 #include <Data.hpp>
 #include <ProgressBar.hpp>
@@ -14,10 +15,10 @@
 
 void test(cv::Mat test_data, cv::Mat test_label, cv::Ptr<cv::ml::SVM> svm);
 
-void FFTDOG(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filelist, 
+void findFrequencyRepond(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filelist, 
 		    const int resize, const int cellsize, const double sigma1, const double sigma2);
 
-cv::Mat single_FFTDOG(cv::Mat srcImg, double sigma1, double sigma2);
+cv::Mat FFTDOG(cv::Mat srcImg, double sigma1, double sigma2);
 
 void parseArguments(const int argc, const char* const* argv,
 					int& resize, int& cellsize, std::string& train_list, std::string& test_list);
