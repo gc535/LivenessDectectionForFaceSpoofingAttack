@@ -12,22 +12,25 @@ def MLP(hdf5, batch_size, sample_length, phase):
     else:
         n.data = L.Input(input_param={'shape': {'dim':[1,sample_length]}})
     #n.data, n.label = L.HDF5Data(batch_size=batch_size, source=hdf5, ntop=2)
-    n.ip1 = L.InnerProduct(n.data, num_output=256, weight_filler=dict(type='xavier'))
+    n.ip1 = L.InnerProduct(n.data, num_output=512, weight_filler=dict(type='xavier'))
     n.drop1 = L.Dropout(n.ip1, dropout_ratio = 0.5, in_place=True)
-    n.sig1 = L.Sigmoid(n.drop1, in_place=True)
-    n.ip2 = L.InnerProduct(n.sig1, num_output=128, weight_filler=dict(type='xavier'))
+    n.sig1 = L.ReLU(n.drop1, in_place=True)
+    n.ip2 = L.InnerProduct(n.sig1, num_output=256, weight_filler=dict(type='xavier'))
     n.drop2 = L.Dropout(n.ip2, dropout_ratio = 0.5, in_place=True)
-    n.sig2 = L.Sigmoid(n.drop2, in_place=True)
-    n.ip3 = L.InnerProduct(n.sig2, num_output=2, weight_filler=dict(type='xavier'))
+    n.sig2 = L.ReLU(n.drop2, in_place=True)
+    n.ip3 = L.InnerProduct(n.sig2, num_output=128, weight_filler=dict(type='xavier'))
+    n.drop3 = L.Dropout(n.ip3, dropout_ratio = 0.5, in_place=True)
+    n.sig3 = L.ReLU(n.drop3, in_place=True)
+    n.ip4 = L.InnerProduct(n.sig3, num_output=2, weight_filler=dict(type='xavier'))
     if phase=='train':
-        n.loss = L.SoftmaxWithLoss(n.ip3, n.label)
-        n.prob = L.Softmax(n.ip3)
+        n.loss = L.SoftmaxWithLoss(n.ip4, n.label)
+        n.prob = L.Softmax(n.ip4)
         n.accuracy = L.Accuracy(n.prob, n.label)
     elif phase=='test':
-        n.prob = L.Softmax(n.ip3)
+        n.prob = L.Softmax(n.ip4)
         #n.accuracy = L.Accuracy(n.prob, n.label)
     elif phase=='inference':
-        n.prob = L.Softmax(n.ip3)
+        n.prob = L.Softmax(n.ip4)
     
     return n.to_proto()
 
@@ -49,7 +52,7 @@ def Solver(model_name, trainModel, testModel, total_samples, train_batch_size, e
     s.type = "Adam"
 
     # Set the initial learning rate for SGD.
-    s.base_lr = 0.00005  # EDIT HERE to try different learning rates      #current best shot: 0.001
+    s.base_lr = 0.0001  # EDIT HERE to try different learning rates      #current best shot: 0.001
     # Set momentum to accelerate learning by
     # taking weighted average of current and previous updates.
     s.momentum = 0.90
@@ -59,7 +62,7 @@ def Solver(model_name, trainModel, testModel, total_samples, train_batch_size, e
     # Set `lr_policy` to define how the learning rate changes during training.
     # This is the same policy as our default LeNet.
     s.lr_policy = 'inv'
-    s.gamma = 0.001                                                   #current best shot: 0.00001
+    s.gamma = 0.00001                                                   #current best shot: 0.00001
     s.power = 0.70
     # EDIT HERE to try the fixed rate (and compare with adaptive solvers)
     # `fixed` is the simplest policy that keeps the learning rate constant.
