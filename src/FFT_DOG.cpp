@@ -79,7 +79,7 @@ void test(cv::Mat test_data, cv::Mat test_label, cv::Ptr<cv::ml::SVM> svm)
 
 // calculate the everage enegery response at each discrete frequency
 void findFrequencyRepond(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filelist, 
-		    const int resize, const int cellsize, const double sigma1, const double sigma2)
+		                 const int resize, const int cellsize, const double sigma1, const double sigma2)
 {
 	cv::Mat srcImg;
 	cv::Mat resizedImg;
