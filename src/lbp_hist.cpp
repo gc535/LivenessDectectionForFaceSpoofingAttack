@@ -36,16 +36,25 @@ static void makeFeaturesVector(Mat &imgOrg, LBP &lbp8, LBP &lbp16, vector<double
     int sizeBlock = 3;
 
     Mat lbpImg;
-
     img = imgOrg;
-    lbp8.calcLBP(img, rad);
-    lbpImg = lbp8.getLBPImage();
 
-    int width = lbpImg.cols / sizeBlock;
-    int height = lbpImg.rows / sizeBlock;
+    // LBP 8, 1
+    lbp8.calcLBP(img, 1);
+    lbpImg = lbp8.getLBPImage();
+    spatial_Histogram(lbp8, lbpImg, cellsize, cellsize, histC);
+
+    // LBP 8, 2
+    lbp8.calcLBP(img, 2);
+    lbpImg = lbp8.getLBPImage();
+    spatial_Histogram(lbp8, lbpImg, cellsize, cellsize, histC);
+
+    // LBP 16, 2
+    lbp16.calcLBP(img, 2);
+    lbpImg = lbp8.getLBPImage();
     spatial_Histogram(lbp8, lbpImg, cellsize, cellsize, histC);
 
     //***************************************//
+    /*
     img = imgOrg;
     lbp8.calcLBP(img, rad);
     hist = lbp8.calcHist().getHist(false);
@@ -64,6 +73,7 @@ static void makeFeaturesVector(Mat &imgOrg, LBP &lbp8, LBP &lbp16, vector<double
     {
         histC.push_back(ptr[k]);
     }
+    */
 }
 
 void getFaceLBPHist(cv::Mat &face, std::vector<double> &hist, const int cellsize)

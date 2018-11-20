@@ -55,8 +55,9 @@ void RawLBP(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filel
         */
         getFaceLBPHist(resizedImg, hist, cellsize);
         sample_hist.push_back(hist);
+        cv::transpose(sample_hist, sample_hist);
         data.push_back(sample_hist);
-        std::cout << "sample_hist row: " << sample_hist.rows << ", cols: " << sample_hist.cols << std::endl;
+        //std::cout << "sample_hist row: " << sample_hist.rows << ", cols: " << sample_hist.cols << std::endl;
 
         /* prepare label feature vector */
         if((*it).find("fake") != std::string::npos)  
