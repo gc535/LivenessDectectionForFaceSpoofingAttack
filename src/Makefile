@@ -11,7 +11,7 @@ LIBFLAGS = -L${OPENCV_PATH} -lopencv_hdf -lopencv_ml -lopencv_dnn -lopencv_highg
 ODIR=obj
 
 
-_COMMON_SRCS = Data.cpp LBP.cpp Util.cpp SingleChannelDOG.cpp
+_COMMON_SRCS = Data.cpp LBP.cpp Util.cpp SingleChannelDOG.cpp ELBP.cpp lbp_hist.cpp
 _COMMON_OBJS = $(_COMMON_SRCS:.cpp=.o)
 COMMON_OBJS = $(patsubst %, $(ODIR)/%,$(_COMMON_OBJS))
 
@@ -37,6 +37,14 @@ _FFT_DOG_SRCS := FFT_DOG.cpp
 _FFT_DOG_OBJS := $(_FFT_DOG_SRCS:.cpp=.o)
 FFT_DOG_OBJS := $(patsubst %, $(ODIR)/%,$(_FFT_DOG_OBJS))
 
+
+# raw lbp histgram
+RAW_LBP = ${PROJECT_HOME}/bin/raw_lbp
+
+_RAW_LBP_SRCS := RawLBP.cpp
+_RAW_LBP_OBJS := $(_RAW_LBP_SRCS:.cpp=.o)
+RAW_LBP_OBJS := $(patsubst %, $(ODIR)/%,$(_RAW_LBP_OBJS))
+
 # binary for data merging
 INTEGRATION = ${PROJECT_HOME}/bin/integration
 
@@ -45,13 +53,14 @@ _INTEGRATION_OBJ = $(_INTEGRATION_SRC:.cpp=.o)
 INTEGRATION_OBJ = $(patsubst %, $(ODIR)/%,$(_INTEGRATION_OBJ))
 
 
-.PHONY: all lbpdata ofmdata fft_dog integration
+.PHONY: all lbpdata ofmdata fft_dog raw_lbp integration
 
-all: lbpdata ofmdata fft_dog integration
+all: lbpdata ofmdata fft_dog raw_lbp integration
 
 lbpdata: $(LBP)
 ofmdata: $(OFM)
 fft_dog: $(FFT_DOG)
+raw_lbp: $(RAW_LBP)
 integration: $(INTEGRATION)
 
 $(LBP): $(LBP_OBJS) $(COMMON_OBJS)
@@ -61,6 +70,9 @@ $(OFM): $(OFM_OBJS) $(COMMON_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS)
 
 $(FFT_DOG): $(FFT_DOG_OBJS) $(COMMON_OBJS)
+	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS)
+
+$(RAW_LBP): $(RAW_LBP_OBJS) $(COMMON_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS)
 
 $(INTEGRATION): $(INTEGRATION_OBJ) $(COMMON_OBJS)
@@ -74,5 +86,5 @@ print-%  : ; @echo $* = $($*)
 
 
 clean:
-	rm -f $(INTEGRATION) $(FFT_DOG) $(LBP) $(OFM) ./obj/*.o
+	rm -f $(INTEGRATION) $(RAW_LBP) $(FFT_DOG) $(LBP) $(OFM) ./obj/*.o
 
