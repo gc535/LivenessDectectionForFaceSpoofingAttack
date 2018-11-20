@@ -8,6 +8,7 @@ import os
 import sys
 import numpy as np
 import argparse
+from matplotlib import pyplot as plt
 
 ### util ###
 from Data_Preperation import importFromTXT, exportH5PY
@@ -15,6 +16,21 @@ from MLP import *
 sys.path.append('../')
 from Util import Monitor
 
+
+class ploter(object):
+    def __init__(self, y):
+        self.x = [i for i in range(len(y[0]))]
+        self.y = y
+        print(self.y)
+        self.fig = plt.figure(1)
+        plt.plot(self.x, y[0], label="0")
+        plt.plot(self.x, y[1], label="1")
+        plt.plot(self.x, y[2], label="2")
+        plt.plot(self.x, y[3], label="3")
+        plt.plot(self.x, y[4], label="4")
+        plt.plot(self.x, y[5], label="5")
+        plt.legend()
+        plt.show()
 
 #######################
 ### argument parser ###
@@ -120,7 +136,9 @@ for e in range(epochs):
     print('epoch: ', e, 'testing...')
     loss = solver.net.blobs['loss'].data[()]                # train loss
     train_acc = solver.net.blobs['accuracy'].data[()]       # train accuracy
-
+    #ploter(solver.net.blobs['data'].data)
+    #variable = input('input something!: ')
+    
     # test while in train and calculate accuracy
     correct = 0
     correct1, correct2, correct3 = 0, 0, 0
