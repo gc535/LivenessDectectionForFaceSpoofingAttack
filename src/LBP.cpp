@@ -1,6 +1,42 @@
 #include "math.h" 
 #include "LBP.hpp"
 
+void LBP::computeLBPImageByRadius(const cv::Mat &srcImage, cv::Mat &LBPImage, Mode mode, const int radius)
+{
+    CV_Assert(srcImage.total() > 0);
+    CV_Assert(srcImage.depth() == CV_8U && srcImage.channels() == 1);
+    
+    // LBP pattern at each pixel can be a 32-bit integer
+    cv::Mat IntSrcImg;
+    LBPImage.create(srcImage.size(), CV_32S);
+    srcImage.convertTo(IntSrcImg, CV_32S);
+
+    // convert type and pad the image
+    cv::Mat PaddedImg;
+    copyMakeBorder(IntSrcImg, PaddedImg, radius, radius, radius, radius, cv::BORDER_DEFAULT);
+    // compute raw LBP image
+    for(int r = 0; r < srcImage.rows; ++r)
+    {
+        for(int c = 0; c < srcImage.cols; ++c)
+        {
+            LBPImage.at<int>(r, c) = getPatternByRadius(r+radius, c+radius, radius, PaddedImg);
+        }
+    }
+
+    if(mode == RIU2)
+    {
+        for(int r = 0; r < LBPImage.rows; ++r)
+        {
+            for(int c = 0; c < LBPImage.cols; ++c)
+            {
+                int RIU2Pattern =  getHopCount( getRIPattern( LBPImage.at<int>(r, c), radius ), radius );
+                
+                LBPImage.at<int>(r, c) = RIU2Pattern;
+                //LBPImage.at<int>(r, c)
+            }
+        }
+    }
+}
 
 //srcImage:image
 //LBPImage:LBP
@@ -172,27 +208,90 @@ void LBP::computeLBPFeatureVector(const cv::Mat &srcImage, cv::Mat &featureVecto
 
 }
 
-
-//获取i中0,1的跳变次数
-int LBP::getHopCount(int i)
+int LBP::getPatternByRadius(const int row, const int col, const int radius, cv::Mat& PaddedImg)
 {
-    // 转换为二进制
-    int a[8] = { 0 };
+    /* 
+     iterate through the "ring" defined by radius distance
+     from interest point: (row, col)
+          -------------
+          |           |
+          |   (r,c)   |
+          |           |
+          | _________ |
+    */
+    if(radius > 3 && radius < 0)
+    {
+        throw std::range_error( "[ERROR]: Only support LBP radius 0<=x<=4." ); 
+    }
+
+    int r, c;
+    int pattern = 0;
+    // top row
+    for(c = col-radius, r = row-radius; c <= col+radius; ++c)
+    {
+        pattern = (pattern << 1) | (PaddedImg.at<int>(r, c) > PaddedImg.at<int>(row, col));
+    } 
+
+    // right col
+    for(c = col+radius, r = row-radius+1; r <= row+radius; ++r)
+    {
+        pattern = (pattern << 1) | (PaddedImg.at<int>(r, c) > PaddedImg.at<int>(row, col));
+    }
+
+    // bottom row
+    for(c = col+radius-1, r = row+radius; c >= col-radius+1; --c)
+    {
+        pattern = (pattern << 1) | (PaddedImg.at<int>(r, c) > PaddedImg.at<int>(row, col));
+    }
+
+    // left col
+    for(c = col-radius, r = row+radius; r >= row-radius+1; --r)
+    {
+        pattern = (pattern << 1) | (PaddedImg.at<int>(r, c) > PaddedImg.at<int>(row, col));
+    }
+
+    return pattern;
+}
+
+
+/*
+ find the minimum equivalent rotation invariant representation 
+*/
+int LBP::getRIPattern(int i, const int radius)
+{
+    int RIPattern = i;
+
+    for(int shift = 0; shift < radius*8-1; ++shift) // eg. 8 digit only need 7 shifts 
+    {
+        i = ( (i % 2) << (radius*8-1) ) | (i >> 1);
+        RIPattern = min(RIPattern, i);
+    }
+    return RIPattern;
+}
+
+/*
+ calculate number of transition from 1-0 or 0-1
+ in the binary sequence of i.
+*/ 
+int LBP::getHopCount(int i, const int radius)
+{
+    // allocate a space for binary representation
+    int a[8*radius] = { 0 };
     int k = 7;
     while (i)
     {
-        // 除2取余
+        // check bit
         a[k] = i % 2;
         i/=2;
         --k;
     }
 
-    // 计算跳变次数
+    // get hop count
     int count = 0;
-    for (int k = 0; k<8; ++k)
+    for (int k = 0; k<8*radius; ++k)
     {
-        // 注意，是循环二进制,所以需要判断是否为8
-        if (a[k] != a[k + 1 == 8 ? 0 : k + 1])
+        // check if hitting the left most digit
+        if (a[k] != a[k + 1 == 8*radius ? 0 : k + 1])
         {
             ++count;
         }
@@ -203,13 +302,13 @@ int LBP::getHopCount(int i)
 
 // 建立等价模式表
 // 这里为了便于建立LBP特征图，58种等价模式序号从1开始:1~58,第59类混合模式映射为0
-void LBP::buildUniformPatternTable(int *table)
+void LBP::buildUniformPatternTable(int *table, const int radius)
 {
     memset(table, 0, 256*sizeof(int));
     uchar temp = 1;
     for (int i = 0; i<256; ++i)
     {
-        if (getHopCount(i) <= 2)
+        if (getHopCount(i, radius) <= 2)
         {
             table[i] = temp;
             temp++;

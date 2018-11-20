@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <stdexcept>
 #include "opencv2/opencv.hpp"
 
 using namespace std;
@@ -57,6 +58,7 @@ public:
     LBP(int size_x, int size_y, cv::Size cellSize=cv::Size(16, 16)): _rows(size_y), _cols(size_x), _cellSize(cellSize){}
 
     /* calculate LBP image with mode */
+    void computeLBPImageByRadius(const cv::Mat &srcImage, cv::Mat &LBPImage, Mode mode, const int radius);
     void computeLBPImage(const cv::Mat &srcImage, cv::Mat &LBPImage, Mode mode);         
     
     /* calculate LBP feature vector with mode */
@@ -108,9 +110,14 @@ private:
         }
         return value9;
     }
-
-    void buildUniformPatternTable(int *table); // 计算等价模式查找表
-    int getHopCount(int i);// 获取i中0,1的跳变次数
+    // 计算等价模式查找表
+    void buildUniformPatternTable(int *table, const int radius);
+    // find the minimum equivalent rotation invariant representation 
+    int getRIPattern(int i, const int radius);
+    // get the LBP pattern at a specific pixel
+    int getPatternByRadius(const int row, const int col, const int radius, cv::Mat& PaddedImg);
+    // get number of transitions between 0 and 1
+    int getHopCount(int i, const int radius);
 };
 
 #endif //LBP_HPP
