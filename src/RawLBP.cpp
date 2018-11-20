@@ -38,7 +38,8 @@ void RawLBP(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filel
     {
         srcImg = cv::imread(*it, cv::IMREAD_COLOR);
         cv::resize(srcImg, resizedImg, cv::Size(resize, resize));
-    
+        cv::Mat sample_hist;
+        /*
         // hsv
         cv::Mat hsv_image;
         cv::cvtColor(resizedImg, hsv_image, cv::COLOR_RGB2HSV);
@@ -51,7 +52,11 @@ void RawLBP(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filel
             channel_hist.push_back(hist);
             sample_hist = mergeCols(sample_hist, channel_hist);
         }
+        */
+        getFaceLBPHist(resizedImg, hist, cellsize);
+        sample_hist.push_back(hist);
         data.push_back(sample_hist);
+        std::cout << "sample_hist row: " << sample_hist.rows << ", cols: " << sample_hist.cols << std::endl;
 
         /* prepare label feature vector */
         if((*it).find("fake") != std::string::npos)  
