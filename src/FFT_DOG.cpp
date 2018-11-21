@@ -11,12 +11,12 @@ int main(int argc, char** argv)
 	// prepare train data
 	Data data(train_list, Data::Action::TRAIN);
 	cv::Mat train_data, train_label;
-	data.DataPreparation(findFrequencyRepond, train_data, train_label, "fft_dog", resize, cellsize, sigma1, sigma2);
+	data.DataPreparation(getFeature, train_data, train_label, "fft_dog", resize, cellsize, sigma1, sigma2);
 
 	// prepare test data
 	data.update(test_list, Data::Action::TEST);
 	cv::Mat test_data, test_label;
-	data.DataPreparation(findFrequencyRepond, test_data, test_label, "fft_dog", resize, cellsize, sigma1, sigma2);
+	data.DataPreparation(getFeature, test_data, test_label, "fft_dog", resize, cellsize, sigma1, sigma2);
 
 
 	// test svm 
@@ -78,8 +78,8 @@ void test(cv::Mat test_data, cv::Mat test_label, cv::Ptr<cv::ml::SVM> svm)
 }
 
 // calculate the everage enegery response at each discrete frequency
-void findFrequencyRepond(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filelist, 
-		                 const int resize, const int cellsize, const double sigma1, const double sigma2)
+void getFeature(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& filelist, 
+		        const int resize, const int cellsize, const double sigma1, const double sigma2)
 {
 	cv::Mat srcImg;
 	cv::Mat resizedImg;
@@ -91,84 +91,11 @@ void findFrequencyRepond(cv::Mat& data, cv::Mat& label, const std::vector<std::s
         //std::cout << "filename = " << *it << std::endl; 
 		srcImg = cv::imread(*it, cv::IMREAD_GRAYSCALE);
 		cv::resize(srcImg, resizedImg, cv::Size(resize, resize));
-		// normalize
-		//cv::Scalar mean, std;
-		//cv::meanStdDev(resizedImg, mean, std);
-		//std::cout <<"origin: " << resizedImg << std::endl;
-		//resizedImg.convertTo(resizedImg, CV_32F);
-		//resizedImg = resizedImg / cv::Mat(resizedImg.rows, resizedImg.cols, CV_32F, cv::Scalar(mean[0]/200));
-		//cv::normalize(resizedImg,  resizedImg, 0, 255, cv::NORM_MINMAX);
-		//std::cout <<"normed: " << resizedImg << std::endl;
 
-		cv::Mat sample_dog_fft;
-		sample_dog_fft = FFTDOG(resizedImg, sigma1, sigma2);
-
-		//std::cout<<fr_bin<<std::endl;
-		float DCEnergy = cv::sum(cv::sum(resizedImg))[0]; 
-		float totalEnergy = cv::sum(cv::sum(sample_dog_fft))[0]; 
-
-		// checking dft result image
-		//std::cout<<"dftimage size:"<< sample_dog_fft.rows<< "," << sample_dog_fft.cols <<std::endl;
-		//cv::imshow( "dft image", sample_dog_fft );                   // Show our image inside it.
-    	//cv::waitKey(0); 
-		
-		// note: please use square image: eg. 64*64 
-		CV_Assert(sample_dog_fft.rows == sample_dog_fft.cols);
-		// Allocate frequencey historgram bin: contains sample_dog_fft.rows number of bins
-		// representing sample_dog_fft.row number of discrete frequency
-		int max_radius = sample_dog_fft.rows/2;
-		int min_radius = 0;
-		cv::Mat fr_bin = cv::Mat::zeros(cv::Size(max_radius + 1 - min_radius, 1), CV_32F); // add one extra bin to store all high frequency 
-		cv::Mat bin_cnt = cv::Mat::zeros(cv::Size(max_radius + 1 - min_radius, 1), CV_32F);
-		// define the center of the image
-		std::pair<float, float> center(0.5*(sample_dog_fft.rows-1), 0.5*(sample_dog_fft.cols-1)); 
-		//std::cout<<fr_bin.rows<< " , "<< fr_bin.cols<<std::endl;
-
-
-
-		for(int r = 0; r < sample_dog_fft.rows; ++r)
-		{
-			for(int c = 0; c < sample_dog_fft.cols; ++c)
-			{	
-				int distance = sqrt( std::pow((r-center.first), 2) + std::pow((c-center.second), 2) );
-				//std::cout<< "ditance:" << distance << " pairs: " << std::pow((r-center.first), 2) <<", " <<std::pow((c-center.second), 2) << std::endl;
-				if(distance >= max_radius) // high frequency
-				{
-					bin_cnt.at<float>(max_radius-min_radius) += 1;
-					if(sample_dog_fft.at<float>(r, c)>10)
-					    fr_bin.at<float>(max_radius-min_radius) += sample_dog_fft.at<float>(r, c);
-				} 
-				else if (distance >= min_radius)  // low frequency 
-				{
-					bin_cnt.at<float>(distance-min_radius) += 1;
-					if(sample_dog_fft.at<float>(r, c)>10)
-					    fr_bin.at<float>(distance-min_radius) += sample_dog_fft.at<float>(r, c);
-				}
-				// else is to low to be considered
-			}
-		}
-	
-
-		//fr_bin = fr_bin / cv::Mat(fr_bin.rows, fr_bin.cols, CV_32FC1, cv::Scalar(cv::sum( fr_bin )[0]));
-		//fr_bin = fr_bin / bin_cnt; 
-        /*for(int b=0; b<max_radius + 1 - min_radius;b++) 
-        {
-        	if(bin_cnt.at<float>(b)>0)
-        	    fr_bin.at<float>(b) =  fr_bin.at<float>(b) /bin_cnt.at<float>(b); 
-        }*/
-        //cv::normalize(fr_bin,fr_bin, 0, 1, cv::NORM_L2); // Transform the matrix with float values into a
-       
-        //fr_bin = fr_bin / cv::Mat(fr_bin.rows, fr_bin.cols, CV_32FC1, totalEnergy); 
-        fr_bin = fr_bin/(totalEnergy-DCEnergy); 
-
-
-        cv::Mat fr_bin2  = fr_bin.colRange(1, fr_bin.cols);
-
-		//std::cout<<fr_bin<<std::endl;
-		//std::cout<< cv::Mat(fr_bin.rows, fr_bin.cols, CV_32FC1, cv::Scalar(cv::sum( bin_cnt )[0])) <<std::endl;
-		//std::cout<<fr_bin.rows<< " , "<< fr_bin.cols<<std::endl;
+		cv::Mat response;
+        findFrequencyReponse(resizedImg, response, sigma1, sigma2);
 		// push back sample
-		data.push_back(fr_bin2);
+		data.push_back(response);
 
 		/* prepare label feature vector */
 		if((*it).find("fake") != std::string::npos)  
@@ -184,23 +111,103 @@ void findFrequencyRepond(cv::Mat& data, cv::Mat& label, const std::vector<std::s
 		progressBar.display();
 	}
 	progressBar.done();
-
 }
 
+
+void findFrequencyReponse(cv::Mat& resizedImg, cv::Mat& response, const double sigma1, const double sigma2)
+{
+    // normalize
+    //cv::Scalar mean, std;
+    //cv::meanStdDev(resizedImg, mean, std);
+    //std::cout <<"origin: " << resizedImg << std::endl;
+    //resizedImg.convertTo(resizedImg, CV_32F);
+    //resizedImg = resizedImg / cv::Mat(resizedImg.rows, resizedImg.cols, CV_32F, cv::Scalar(mean[0]/200));
+    //cv::normalize(resizedImg,  resizedImg, 0, 255, cv::NORM_MINMAX);
+    //std::cout <<"normed: " << resizedImg << std::endl;
+    cv::Mat sample_dog_fft;
+    sample_dog_fft = FFTDOG(resizedImg, sigma1, sigma2);
+
+    //std::cout<<fr_bin<<std::endl;
+    float DCEnergy = cv::sum(cv::sum(resizedImg))[0]; 
+    float totalEnergy = cv::sum(cv::sum(sample_dog_fft))[0]; 
+
+    // checking dft result image
+    //std::cout<<"dftimage size:"<< sample_dog_fft.rows<< "," << sample_dog_fft.cols <<std::endl;
+    //cv::imshow( "dft image", sample_dog_fft );                   // Show our image inside it.
+    //cv::waitKey(0); 
+    
+    // note: please use square image: eg. 64*64 
+    CV_Assert(sample_dog_fft.rows == sample_dog_fft.cols);
+    // Allocate frequencey historgram bin: contains sample_dog_fft.rows number of bins
+    // representing sample_dog_fft.row number of discrete frequency
+    int max_radius = sample_dog_fft.rows/2;
+    int min_radius = 0;
+    cv::Mat fr_bin = cv::Mat::zeros(cv::Size(max_radius + 1 - min_radius, 1), CV_32F); // add one extra bin to store all high frequency 
+    cv::Mat bin_cnt = cv::Mat::zeros(cv::Size(max_radius + 1 - min_radius, 1), CV_32F);
+    // define the center of the image
+    std::pair<float, float> center(0.5*(sample_dog_fft.rows-1), 0.5*(sample_dog_fft.cols-1)); 
+    //std::cout<<fr_bin.rows<< " , "<< fr_bin.cols<<std::endl;
+
+
+
+    for(int r = 0; r < sample_dog_fft.rows; ++r)
+    {
+        for(int c = 0; c < sample_dog_fft.cols; ++c)
+        {   
+            int distance = sqrt( std::pow((r-center.first), 2) + std::pow((c-center.second), 2) );
+            //std::cout<< "ditance:" << distance << " pairs: " << std::pow((r-center.first), 2) <<", " <<std::pow((c-center.second), 2) << std::endl;
+            if(distance >= max_radius) // high frequency
+            {
+                bin_cnt.at<float>(max_radius-min_radius) += 1;
+                if(sample_dog_fft.at<float>(r, c)>10)
+                    fr_bin.at<float>(max_radius-min_radius) += sample_dog_fft.at<float>(r, c);
+            } 
+            else if (distance >= min_radius)  // low frequency 
+            {
+                bin_cnt.at<float>(distance-min_radius) += 1;
+                if(sample_dog_fft.at<float>(r, c)>10)
+                    fr_bin.at<float>(distance-min_radius) += sample_dog_fft.at<float>(r, c);
+            }
+            // else is to low to be considered
+        }
+    }
+
+
+    //fr_bin = fr_bin / cv::Mat(fr_bin.rows, fr_bin.cols, CV_32FC1, cv::Scalar(cv::sum( fr_bin )[0]));
+    //fr_bin = fr_bin / bin_cnt; 
+    /*for(int b=0; b<max_radius + 1 - min_radius;b++) 
+    {
+        if(bin_cnt.at<float>(b)>0)
+            fr_bin.at<float>(b) =  fr_bin.at<float>(b) /bin_cnt.at<float>(b); 
+    }*/
+    //cv::normalize(fr_bin,fr_bin, 0, 1, cv::NORM_L2); // Transform the matrix with float values into a
+   
+    //fr_bin = fr_bin / cv::Mat(fr_bin.rows, fr_bin.cols, CV_32FC1, totalEnergy); 
+    fr_bin = fr_bin/(totalEnergy-DCEnergy); 
+    cv::Mat fr_bin2  = fr_bin.colRange(1, fr_bin.cols);
+    response = fr_bin2.clone();
+
+    //std::cout<<fr_bin<<std::endl;
+    //std::cout<< cv::Mat(fr_bin.rows, fr_bin.cols, CV_32FC1, cv::Scalar(cv::sum( bin_cnt )[0])) <<std::endl;
+    //std::cout<<fr_bin.rows<< " , "<< fr_bin.cols<<std::endl;    
+} 
+
 // FFT on DOG Features
-cv::Mat FFTDOG(cv::Mat srcImg, double sigma1, double sigma2)
+cv::Mat FFTDOG(cv::Mat srcImg, const double sigma1, const double sigma2)
 {
 	cv::Mat XF1, XF2, DXF, output;
 	int size1, size2;
-	// Filter Sizes
-	//size1 = 2 * (int)(3*sigma1) + 3;
-	//size2 = 2 * (int)(3*sigma2) + 3;
+	/*
+    // Filter Sizes
+	size1 = 2 * (int)(3*sigma1) + 3;
+	size2 = 2 * (int)(3*sigma2) + 3;
 	// Gaussian Filter
-	//cv::GaussianBlur(srcImg, XF1, cv::Size(size1, size1), sigma1, sigma1, cv::BORDER_REPLICATE);
-	//cv::GaussianBlur(srcImg, XF2, cv::Size(size2, size2), sigma2, sigma2, cv::BORDER_REPLICATE);
+	cv::GaussianBlur(srcImg, XF1, cv::Size(size1, size1), sigma1, sigma1, cv::BORDER_REPLICATE);
+	cv::GaussianBlur(srcImg, XF2, cv::Size(size2, size2), sigma2, sigma2, cv::BORDER_REPLICATE);
 	// Difference
-	//DXF = XF1 - XF2;
-	
+	DXF = XF1 - XF2;
+	*/
+
 	DXF = srcImg;
 	// Discrete Fourier Transform
 	// pad the image for best performance
