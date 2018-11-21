@@ -19,8 +19,7 @@ int main(int argc, char** argv)
     cv::Mat test_data, test_label;
     data.DataPreparation(RawLBP, test_data, test_label, "raw_lbp", resize, cellsize);
 
-
-
+    return 0;
 }
 
 
@@ -123,8 +122,8 @@ void printHelp()
 {
     std::cout << "\nUsage: ./lbp [options]" << std::endl;
     std::cout << "\nOptions:" << std::endl;
-    std::cout << "\t-r  <int> - Target resize size (default=96)" << std::endl;
-    std::cout << "\t-c  <int> - Desired cell size for LBP extraction (default=16)" << std::endl;
+    std::cout << "\t-r  <int> - Target resize size (default=64)" << std::endl;
+    std::cout << "\t-c  <int> - Desired cell size for LBP extraction (default=8)" << std::endl;
     std::cout << "\t-t <string> - Path to a txt file contains a list of training data" << std::endl;
     std::cout << "\t-v <string> - Path to a txt file contains a list of testing data" << std::endl;
 }
@@ -137,7 +136,6 @@ void printHelp()
 /home/ubuntu/Desktop/d/combined/test/living-798.jpg
 /home/ubuntu/Desktop/d/combined/test/living-901.jpg
 /home/ubuntu/Desktop/d/combined/test/living-1239.jpg
-
 
 
 */
