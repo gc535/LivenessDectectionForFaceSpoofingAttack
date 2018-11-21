@@ -45,6 +45,16 @@ _RAW_LBP_SRCS := RawLBP.cpp
 _RAW_LBP_OBJS := $(_RAW_LBP_SRCS:.cpp=.o)
 RAW_LBP_OBJS := $(patsubst %, $(ODIR)/%,$(_RAW_LBP_OBJS))
 
+
+# combine dog lbp and raw lbp
+COMBINED_LBP = ${PROJECT_HOME}/bin/combined_lbp
+
+_COMBINED_LBP_SRCS := combinedLBP.cpp
+_COMBINED_LBP_OBJS := $(_COMBINED_LBP_SRCS:.cpp=.o)
+COMBINED_LBP_OBJS := $(patsubst %, $(ODIR)/%,$(_COMBINED_LBP_OBJS))
+
+
+
 # binary for data merging
 INTEGRATION = ${PROJECT_HOME}/bin/integration
 
@@ -53,14 +63,15 @@ _INTEGRATION_OBJ = $(_INTEGRATION_SRC:.cpp=.o)
 INTEGRATION_OBJ = $(patsubst %, $(ODIR)/%,$(_INTEGRATION_OBJ))
 
 
-.PHONY: all lbpdata ofmdata fft_dog raw_lbp integration
+.PHONY: all lbpdata ofmdata fft_dog raw_lbp combined_lbp integration
 
-all: lbpdata ofmdata fft_dog raw_lbp integration
+all: lbpdata ofmdata fft_dog raw_lbp combined_lbp integration
 
 lbpdata: $(LBP)
 ofmdata: $(OFM)
 fft_dog: $(FFT_DOG)
 raw_lbp: $(RAW_LBP)
+combined_lbp: $(COMBINED_LBP)
 integration: $(INTEGRATION)
 
 $(LBP): $(LBP_OBJS) $(COMMON_OBJS)
@@ -75,6 +86,9 @@ $(FFT_DOG): $(FFT_DOG_OBJS) $(COMMON_OBJS)
 $(RAW_LBP): $(RAW_LBP_OBJS) $(COMMON_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS)
 
+$(COMBINED_LBP): $(COMBINED_LBP_OBJS) $(COMMON_OBJS) 
+	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS)
+
 $(INTEGRATION): $(INTEGRATION_OBJ) $(COMMON_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS) 
 
@@ -86,5 +100,5 @@ print-%  : ; @echo $* = $($*)
 
 
 clean:
-	rm -f $(INTEGRATION) $(RAW_LBP) $(FFT_DOG) $(LBP) $(OFM) ./obj/*.o
+	rm -f $(INTEGRATION) $(COMBINED_LBP) $(RAW_LBP) $(FFT_DOG) $(LBP) $(OFM) ./obj/*.o
 
