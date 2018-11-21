@@ -37,26 +37,30 @@ static void makeFeaturesVector(Mat &imgOrg, LBP &lbp8, LBP &lbp16, vector<double
 
     Mat lbpImg;
     img = imgOrg;
-
+    
+    /*
     // LBP 8, 1
     lbp8.calcLBP(img, 1);
     lbpImg = lbp8.getLBPImage();
     spatial_Histogram(lbp8, lbpImg, cellsize, cellsize, histC);
+    */
 
     // LBP 8, 2
-    lbp8.calcLBP(img, 2);
+    lbp8.calcLBP(img, 2, true);
     lbpImg = lbp8.getLBPImage();
     spatial_Histogram(lbp8, lbpImg, cellsize, cellsize, histC);
 
+    /*
     // LBP 16, 2
     lbp16.calcLBP(img, 2);
     lbpImg = lbp8.getLBPImage();
     spatial_Histogram(lbp8, lbpImg, cellsize, cellsize, histC);
+    */
 
     //***************************************//
-    /*
+    
     img = imgOrg;
-    lbp8.calcLBP(img, rad);
+    lbp8.calcLBP(img, rad, true);
     hist = lbp8.calcHist().getHist(false);
     ptr = &hist[0];
     for (int k = 0; k<hist.size(); k++)
@@ -65,7 +69,7 @@ static void makeFeaturesVector(Mat &imgOrg, LBP &lbp8, LBP &lbp16, vector<double
     }
 
     img = imgOrg;
-    lbp16.calcLBP(img, rad);
+    lbp16.calcLBP(img, rad, true);
     hist = lbp16.calcHist().getHist(false);
     ptr = &hist[0];
 
@@ -73,13 +77,14 @@ static void makeFeaturesVector(Mat &imgOrg, LBP &lbp8, LBP &lbp16, vector<double
     {
         histC.push_back(ptr[k]);
     }
-    */
+    
 }
 
 void getFaceLBPHist(cv::Mat &face, std::vector<double> &hist, const int cellsize)
 {
     static LBP lbp8(8, LBP::strToType("riu2"));
     static LBP lbp16(16, LBP::strToType("riu2"));
+
     Mat tmp;
     cvtColor(face, tmp, CV_BGR2YCrCb);
     //cvtColor(face, tmp, CV_BGR2GRAY);
