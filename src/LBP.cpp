@@ -188,6 +188,7 @@ void LBP::computeLBPFeatureVector(const cv::Mat &srcImage, cv::Mat &featureVecto
                     }
                 }
             }
+            /* Normalize outside on the concatenated vector make more sense?
             // normalize
             for (int i = 0; i < numberOfBins; ++i)
             {
@@ -203,6 +204,7 @@ void LBP::computeLBPFeatureVector(const cv::Mat &srcImage, cv::Mat &featureVecto
                     }
                 }
             }
+            */
         }
     }
 

@@ -116,6 +116,16 @@ void getFeature(cv::Mat& data, cv::Mat& label, const std::vector<std::string>& f
 		cv::Mat sample_hist_vector;
 		DOG_LBP(resizedImg, sample_hist_vector, vector_sigmas, resize, cellsize);
 
+		// Normalize
+		float sum = 0;
+		for (cv::MatIterator_<float> it = sample_hist_vector.begin<float>(); it != sample_hist_vector.end<float>(); ++it) {
+	        sum += *it;
+	    }
+
+	    for (cv::MatIterator_<float> it = sample_hist_vector.begin<float>(); it != sample_hist_vector.end<float>(); ++it) {
+	        *it = (*it) / sum;
+	    }
+
 		// push back sample
 		data.push_back(sample_hist_vector);
 
