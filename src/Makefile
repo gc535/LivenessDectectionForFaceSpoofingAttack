@@ -1,8 +1,14 @@
-PROJECT_HOME=..
 CXX = g++
-IDIR=.
+
+PROJECT_HOME = ..
+ROOT_IDIR = .
+SHEARLET_IDIR = ./ShearletUtil
 CAFFE_IDIR=/home/ubuntu/anaconda3/envs/caffe-cpu/include
-CFLAGS = -O0 -std=c++11 -I$(IDIR) 
+
+IDIR =$(ROOT_IDIR) $(SHEARLET_IDIR)
+
+
+CFLAGS = -O0 -std=c++11 $(foreach d, $(IDIR), -I$d)
 
 #OPENCV_PATH=/usr/local/lib
 OPENCV_PATH=/usr/local/lib
@@ -15,6 +21,11 @@ _COMMON_SRCS = Data.cpp LBP.cpp Util.cpp SingleChannelDOG.cpp ELBP.cpp lbp_hist.
 _COMMON_OBJS = $(_COMMON_SRCS:.cpp=.o)
 COMMON_OBJS = $(patsubst %, $(ODIR)/%,$(_COMMON_OBJS))
 
+
+_SHEARLET_ADDON := helper.cpp
+_SHEARLET_SRCS := $(patsubst %, $(SHEARLET_IDIR)/%,$(_SHEARLET_ADDON))
+_SHEARLET_OBJS := $(_SHEARLET_ADDON:.cpp=.o)
+SHEARLET_OBJS := $(patsubst %, $(ODIR)/%,$(_SHEARLET_OBJS))
 
 # binary for lbp extraction
 LBP = ${PROJECT_HOME}/bin/lbp
@@ -74,7 +85,7 @@ raw_lbp: $(RAW_LBP)
 combined_lbp: $(COMBINED_LBP)
 integration: $(INTEGRATION)
 
-$(LBP): $(LBP_OBJS) $(COMMON_OBJS)
+$(LBP): $(LBP_OBJS) $(COMMON_OBJS) $(SHEARLET_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS) 
 
 $(OFM): $(OFM_OBJS) $(COMMON_OBJS)
@@ -94,6 +105,9 @@ $(INTEGRATION): $(INTEGRATION_OBJ) $(COMMON_OBJS)
 
 
 $(ODIR)/%.o: %.cpp
+	$(CXX) -c -g -o $@ $< $(CFLAGS)
+
+$(ODIR)/%.o: $(_SHEARLET_SRCS)
 	$(CXX) -c -g -o $@ $< $(CFLAGS)
 
 print-%  : ; @echo $* = $($*)
