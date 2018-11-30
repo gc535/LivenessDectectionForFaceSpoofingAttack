@@ -63,8 +63,6 @@ void gen_x_y_cordinates(cv::Mat& x1n, cv::Mat& y1n, cv::Mat& x2n, cv::Mat& y2n, 
 }
 
 
-
-
 std::vector<double> linespace(double start, double end, int num_sample)
 {
     std::vector<double> vector;
@@ -102,4 +100,36 @@ cv::Mat avg_pol(int L, const cv::Mat& x1, const cv::Mat& y1, const cv::Mat& x2, 
         }
     }
     return D;
+}
+
+cv::Mat rec_from_pol(cv::Mat& l, int n, cv::Mat& x1, cv::Mat& y1, cv::Mat& x2, cv::Mat& y2, cv::Mat& D)
+{
+    cv::Mat C = cv::Mat::zeros(n, n, CV_32S);
+    int option = 0;
+    if(option == 1)
+    {
+        for(int i = 0; i < n; ++i)
+        {
+            for(int j = 0; j < n; ++j)
+            {
+                C.at<int>(y1.at<int>(i, j), x1.at<int>(i, j)) = l.at<int>(i, j);
+                C.at<int>(y2.at<int>(i, j), x2.at<int>(i, j)) = l.at<int>(i+n, j);
+            }
+        }
+        
+    }
+    else
+    {
+        for(int i = 0; i < n; ++i)
+        {
+            for(int j = 0; j < n; ++j)
+            {
+                C.at<int>(y1.at<int>(i, j), x1.at<int>(i, j)) = C.at<int>(y1.at<int>(i, j), x1.at<int>(i, j)) + l.at<int>(i, j);
+                C.at<int>(y2.at<int>(i, j), x2.at<int>(i, j)) = C.at<int>(y2.at<int>(i, j), x2.at<int>(i, j)) + l.at<int>(i+n, j);
+            }
+        }
+    }
+    // average common radial grid values 
+    C = C / D;
+    return C;
 }
