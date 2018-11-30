@@ -2,10 +2,11 @@ CXX = g++
 
 PROJECT_HOME = ..
 ROOT_IDIR = .
-SHEARLET_IDIR = ./ShearletUtil
+SHEARLET_IDIR = ./ShearletUtil/
+QUALITY_IDIR = ./QualityUtil/
 CAFFE_IDIR=/home/ubuntu/anaconda3/envs/caffe-cpu/include
 
-IDIR =$(ROOT_IDIR) $(SHEARLET_IDIR)
+IDIR =$(ROOT_IDIR) $(SHEARLET_IDIR) $(QUALITY_IDIR)
 
 
 CFLAGS = -O0 -std=c++11 $(foreach d, $(IDIR), -I$d)
@@ -17,10 +18,9 @@ LIBFLAGS = -L${OPENCV_PATH} -lopencv_hdf -lopencv_ml -lopencv_dnn -lopencv_highg
 ODIR=obj
 
 
-_COMMON_SRCS = Data.cpp LBP.cpp Util.cpp SingleChannelDOG.cpp ELBP.cpp lbp_hist.cpp
+_COMMON_SRCS = Data.cpp LBP.cpp Util.cpp SingleChannelDOG.cpp ELBP.cpp lbp_hist.cpp brisque.cpp
 _COMMON_OBJS = $(_COMMON_SRCS:.cpp=.o)
 COMMON_OBJS = $(patsubst %, $(ODIR)/%,$(_COMMON_OBJS))
-
 
 _SHEARLET_ADDON := helper.cpp
 _SHEARLET_SRCS := $(patsubst %, $(SHEARLET_IDIR)/%,$(_SHEARLET_ADDON))
@@ -56,6 +56,12 @@ _RAW_LBP_SRCS := RawLBP.cpp
 _RAW_LBP_OBJS := $(_RAW_LBP_SRCS:.cpp=.o)
 RAW_LBP_OBJS := $(patsubst %, $(ODIR)/%,$(_RAW_LBP_OBJS))
 
+#QaulityExtraction
+EXTRACT_QUALITY = ${PROJECT_HOME}/bin/quality_feature
+
+_EXTRACT_QUALITY_SRCS = extractQualityFeature.cpp
+_EXTRACT_QUALITY_OBJS := $(_EXTRACT_QUALITY_SRCS:.cpp=.o)
+EXTRACT_QUALITY_OBJS := $(patsubst %, $(ODIR)/%,$(_EXTRACT_QUALITY_OBJS))
 
 # combine dog lbp and raw lbp
 COMBINED_LBP = ${PROJECT_HOME}/bin/combined_lbp
@@ -63,8 +69,6 @@ COMBINED_LBP = ${PROJECT_HOME}/bin/combined_lbp
 _COMBINED_LBP_SRCS := combinedLBP.cpp
 _COMBINED_LBP_OBJS := $(_COMBINED_LBP_SRCS:.cpp=.o)
 COMBINED_LBP_OBJS := $(patsubst %, $(ODIR)/%,$(_COMBINED_LBP_OBJS))
-
-
 
 # binary for data merging
 INTEGRATION = ${PROJECT_HOME}/bin/integration
@@ -74,18 +78,19 @@ _INTEGRATION_OBJ = $(_INTEGRATION_SRC:.cpp=.o)
 INTEGRATION_OBJ = $(patsubst %, $(ODIR)/%,$(_INTEGRATION_OBJ))
 
 
-.PHONY: all lbpdata ofmdata fft_dog raw_lbp combined_lbp integration
+.PHONY: all lbpdata ofmdata fft_dog raw_lbp extract_quality_feature combined_lbp integration
 
-all: lbpdata ofmdata fft_dog raw_lbp combined_lbp integration
+all: lbpdata ofmdata fft_dog raw_lbp extract_quality_feature combined_lbp integration
 
 lbpdata: $(LBP)
 ofmdata: $(OFM)
 fft_dog: $(FFT_DOG)
 raw_lbp: $(RAW_LBP)
+extract_quality_feature: $(EXTRACT_QUALITY)
 combined_lbp: $(COMBINED_LBP)
 integration: $(INTEGRATION)
 
-$(LBP): $(LBP_OBJS) $(COMMON_OBJS) $(SHEARLET_OBJS)
+$(LBP): $(LBP_OBJS) $(COMMON_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS) 
 
 $(OFM): $(OFM_OBJS) $(COMMON_OBJS)
@@ -97,6 +102,9 @@ $(FFT_DOG): $(FFT_DOG_OBJS) $(COMMON_OBJS)
 $(RAW_LBP): $(RAW_LBP_OBJS) $(COMMON_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS)
 
+$(EXTRACT_QUALITY): $(EXTRACT_QUALITY_OBJS) $(COMMON_OBJS)
+	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS)
+
 $(COMBINED_LBP): $(COMBINED_LBP_OBJS) $(COMMON_OBJS) 
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS)
 
@@ -104,6 +112,7 @@ $(INTEGRATION): $(INTEGRATION_OBJ) $(COMMON_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS) 
 
 
+### generate all object files in ./obj/
 $(ODIR)/%.o: %.cpp
 	$(CXX) -c -g -o $@ $< $(CFLAGS)
 
@@ -114,5 +123,5 @@ print-%  : ; @echo $* = $($*)
 
 
 clean:
-	rm -f $(INTEGRATION) $(COMBINED_LBP) $(RAW_LBP) $(FFT_DOG) $(LBP) $(OFM) ./obj/*.o
+	rm -f $(INTEGRATION) $(COMBINED_LBP) $(EXTRACT_QUALITY) $(RAW_LBP) $(FFT_DOG) $(LBP) $(OFM) ./obj/*.o
 
