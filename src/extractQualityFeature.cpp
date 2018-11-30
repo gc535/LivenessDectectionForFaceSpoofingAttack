@@ -33,14 +33,28 @@ void extractQualityFeature(cv::Mat& data, cv::Mat& label, const std::vector<std:
     ProgressBar progressBar(total_ticks, 70, '=', '-');
     for(std::vector<std::string>::const_iterator it = filelist.begin(); it != filelist.end(); ++it)
     {
-        cv::Mat feature;
+        cv::Mat feature_orig, feature_pydown;
+        // origin img
         srcImg = cv::imread(*it, cv::IMREAD_COLOR);
-        std::vector<double> featurevector;
-        ComputeBrisqueFeature(srcImg, featurevector);
-        feature.push_back(featurevector);
+        std::vector<double> feature_vector_orig;
+        ComputeBrisqueFeature(srcImg, feature_vector_orig);
+        cv::transpose(cv::Mat(feature_vector_orig), feature_orig);
+
+        // img down sample by factor of 2 
+        std::vector<double> feature_vector_pyrdown;
+        cv::Mat downsampled_srcImg;
+        cv::pyrDown(srcImg, downsampled_srcImg, cv::Size(srcImg.cols/2, srcImg.rows/2));  //cv::Size(weight, height)
+        ComputeBrisqueFeature(downsampled_srcImg, feature_vector_pyrdown);
+        cv::transpose(cv::Mat(feature_vector_pyrdown), feature_pydown);
+
+        // merged origin and downsampled feature vector
+        //std::cout << "sample_hist row: " << feature_orig.rows << ", cols: " << feature_orig.cols << std::endl;
+        //std::cout << "sample_hist row: " << feature_pydown.rows << ", cols: " << feature_pydown.cols << std::endl;
+        cv::Mat feature = mergeCols(feature_orig, feature_pydown);
+
         
         data.push_back(feature);
-        //std::cout << "sample_hist row: " << sample_hist.rows << ", cols: " << sample_hist.cols << std::endl;
+        //std::cout << "sample_hist row: " << feature.rows << ", cols: " << feature.cols << std::endl;
 
         /* prepare label feature vector */
         if((*it).find("fake") != std::string::npos)  

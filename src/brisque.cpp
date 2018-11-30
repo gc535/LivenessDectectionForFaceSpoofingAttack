@@ -54,9 +54,9 @@ void ComputeBrisqueFeature(Mat& orig, vector<double>& featurevector)
 
     // Compute paired product images
     // indices for orientations (H, V, D1, D2)
-    int shifts[4][2]={{0,1},{1,0},{1,1},{-1,1}};
+    int shifts[8][2]={{0,1},{1,0},{1,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1}};
 
-    for(int itr_shift=1; itr_shift<=4; itr_shift++)
+    for(int itr_shift=1; itr_shift<=8; itr_shift++)
     {
       // select the shifting index from the 2D array
       int* reqshift = shifts[itr_shift-1];
