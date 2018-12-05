@@ -90,7 +90,7 @@ extract_quality_feature: $(EXTRACT_QUALITY)
 combined_lbp: $(COMBINED_LBP)
 integration: $(INTEGRATION)
 
-$(LBP): $(LBP_OBJS) $(COMMON_OBJS)
+$(LBP): $(LBP_OBJS) $(COMMON_OBJS) $(SHEARLET_OBJS)
 	$(CXX) -o $@ $^ $(CFLAGS) $(LIBFLAGS) 
 
 $(OFM): $(OFM_OBJS) $(COMMON_OBJS)
@@ -113,8 +113,9 @@ $(INTEGRATION): $(INTEGRATION_OBJ) $(COMMON_OBJS)
 
 
 ### generate all object files in ./obj/
-$(ODIR)/%.o: %.cpp
+$(ODIR)/%.o: %.cpp 
 	$(CXX) -c -g -o $@ $< $(CFLAGS)
+
 
 $(ODIR)/%.o: $(_SHEARLET_SRCS)
 	$(CXX) -c -g -o $@ $< $(CFLAGS)
