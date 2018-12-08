@@ -1,19 +1,7 @@
-#include <opencv2/opencv.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/hdf/hdf5.hpp>
-
 #include <Util.hpp>
 
 #include <stdlib.h>
-#include <vector>
-#include <string>
 #include <iostream>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <errno.h>
-#include <unistd.h>
-#include <fstream>
-
 
 cv::Mat mergeRows(const cv::Mat& A, const cv::Mat& B)
 {
@@ -165,5 +153,37 @@ int getFilelist( std::string dirPath, std::vector<std::string>& filelist)
         return errno;
     }
     return 0;
+}
 
+/* read .txt file data to Mat maintain the same dimension*/
+void readFile2Mat(cv::Mat& m, const std::string file)
+{
+    /* file data looks like:
+        1, 2, 5, -1, 0.5, 3.14;
+        4, 67,3, 0.2  1   -1;
+        9, 10,2, -3, 1.5, 3
+    */
+    if(!exists(file))
+    {
+        throw std::invalid_argument( "file does not exist in the directory" );
+    }
+    std::ifstream infile( file );
+    std::string line;
+    while(getline( infile, line ))
+    {
+        
+        std::istringstream lineStream( line );
+        cv::Mat mat_row;
+        std::vector<double> row;
+        std::string num;
+
+        while(getline( lineStream, num, ',' ))
+        {
+          row.push_back( std::stod(num) );
+        }
+
+        mat_row.push_back( row );
+        cv::transpose(mat_row, mat_row);
+        m.push_back(mat_row);
+    }
 }

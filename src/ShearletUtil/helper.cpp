@@ -284,21 +284,86 @@ void shearing_filters_Myer(std::vector<int>& m, std::vector<int>& num, const int
 
 }
 
-
 cv::Mat Mat_sqrt(cv::Mat input)
 {
-    cv::Mat result = cv::Mat::zeros(input.rows, input.cols, CV_32F);
+    input.convertTo(input, CV_64F);
+    cv::Mat result = cv::Mat::zeros(input.rows, input.cols, CV_64F);
     for(int r = 0; r < input.rows; ++r)
     {
         for(int c = 0; c < input.cols; ++c)
         {
-            result.at<float>(r, c) = sqrt( input.at<float>(r, c) );
+            result.at<double>(r, c) = sqrt( input.at<double>(r, c) );
         }
     }
     return result;
 }
 
 
+void complexDiv(cv::Mat& src1_real, cv::Mat& src1_img, cv::Mat& src2_real, cv::Mat& src2_img,
+                cv::Mat& out_real, cv::Mat& out_img)
+{   
+    /* 
+     this function calculate the division between two complex number:
+        a + bj     (a + bj)(c - dj)     ac - adj + bcj + bd
+       -------- = ------------------ = -------------------- 
+        c + dj     (c + dj)(c - dj)         c^2 + d^2
+
+        ac + bd        bc - ad
+    = ----------- + j-----------
+       c^2 + d^2      c^2 + d^2
+
+    */
+    cv::Mat den = src2_real.mul(src2_real) + src2_img.mul(src2_img); 
+    cv::Mat real_num = src1_real.mul(src2_real) + src1_img.mul(src2_img);
+    cv::Mat img_num = src1_img.mul(src2_real) - src1_real.mul(src2_img);
+
+    cv::divide(real_num, den, out_real, 1, CV_64F);
+    cv::divide(img_num, den, out_img, 1, CV_64F);
+}
+
+void complexMul(cv::Mat& src1_real, cv::Mat& src1_img, cv::Mat& src2_real, cv::Mat& src2_img,
+                cv::Mat& out_real, cv::Mat& out_img)
+{   
+    /* 
+     this function calculate the division between two complex number:
+       (a + bj)(c + dj)  =  ac + adj + bcj - bd
+    
+     = (ac - bd) + j(bc + ad)
+
+    */
+    out_real = src1_real.mul(src2_real) - src1_img.mul(src2_img);
+    out_img = src1_img.mul(src2_real) + src1_real.mul(src2_img);
+}
+
+
+void complexAdd(cv::Mat& src1_real, cv::Mat& src1_img, cv::Mat& src2_real, cv::Mat&src2_img,
+                cv::Mat& out_real, cv::Mat& out_img)
+{
+    out_real = src1_real + src2_real;
+    out_img = src1_img + src2_img;
+}
+
+void complexSqrt(cv::Mat& real, cv::Mat& img, cv::Mat& result_real, cv::Mat& result_img)
+{
+    /*
+        assume (p + qi)^2 = a + bi, then we have
+            1. p^2 - q^2 = a
+            2. 2pq = b
+        
+        Solving this two equation we will have:
+             sqrt(a + sqrt(a^2 + b^2))
+        p = ---------------------------
+                    sqrt(2)
+
+        then we can calculate:
+             b
+        q = ----
+             2p   
+    */
+    cv::Mat q_num = Mat_sqrt(real + Mat_sqrt(real.mul(real) + img.mul(img)));
+    result_real = q_num / sqrt(2);
+    cv::divide(img, result_real, result_img, 0.5, CV_64F);
+}
 
 
 }
