@@ -44,10 +44,6 @@ void gen_x_y_cordinates(int n, cv::Mat& x1n, cv::Mat& y1n, cv::Mat& x2n, cv::Mat
             }
         }
     }
-    //std::cout<< "x1: " << x1 << std::endl;
-    //std::cout<< "y1: " << y1 << std::endl;
-    //std::cout<< "x2: " << x2 << std::endl;
-    //std::cout<< "y2: " << y1 << std::endl;
 
     n -= 1;
     x1n = cv::Mat::zeros(n, n, CV_32S);
