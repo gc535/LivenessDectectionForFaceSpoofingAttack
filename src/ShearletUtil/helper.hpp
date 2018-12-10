@@ -21,7 +21,7 @@ cv::Mat windowing(cv::Mat x, const int L, const int c);
 
 float meyer_wind(const float q);
 
-void shearing_filters_Myer(std::vector<int>& m, std::vector<int>& num, const int L);
+std::vector<std::vector<std::pair<cv::Mat, cv::Mat> > > shearing_filters_Myer(std::vector<int>& m, std::vector<int>& num, const int L);
 
 cv::Mat Mat_sqrt(cv::Mat input);
 

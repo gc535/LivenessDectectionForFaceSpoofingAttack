@@ -220,7 +220,7 @@ float meyer_wind(const float q)
 }
 
 
-void shearing_filters_Myer(std::vector<int>& m, std::vector<int>& num, const int L)
+std::vector<std::vector<std::pair<cv::Mat, cv::Mat> > > shearing_filters_Myer(std::vector<int>& m, std::vector<int>& num, const int L)
 {
     // This function computes the shearing filters (wedge shaped) using the Meyer window
     // function.
@@ -420,7 +420,7 @@ void shearing_filters_Myer(std::vector<int>& m, std::vector<int>& num, const int
     }
     /* END constructing dshears */
 
-    return 0;
+    return dshears;
 }
 
 cv::Mat Mat_sqrt(cv::Mat input)
