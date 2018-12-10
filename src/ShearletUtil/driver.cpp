@@ -6,7 +6,7 @@
 int main()
 {   
 
-    /*
+    
     std::vector<int> m(4, 32);
     std::vector<int> num(4, 2);
     int L = 256;
@@ -35,9 +35,9 @@ int main()
         }
         for(int k = 0; k < M; ++k)
         {
-            directional_w_s[k] = Mat_sqrt( directional_w_s[k].mul(1/w) );
-            cv::Mat input_real = directional_w_s[k]
-            cv::Mat input_img = cv::Mat::zeros(input_real.row, input_real.cols, CV_64F);
+            directional_w_s[k] = Shearlet::Mat_sqrt( directional_w_s[k].mul(1/w) );
+            cv::Mat input_real = directional_w_s[k];
+            cv::Mat input_img = cv::Mat::zeros(input_real.rows, input_real.cols, CV_64F);
             input_real.convertTo(input_real, CV_64F);
             
             cv::Mat ifftshift_real, ifftshift_img;
@@ -48,33 +48,17 @@ int main()
             fft2shift(ifft2_real, ifft2_img, fft2_real, fft2_img);
 
             directional_w_s[k] = fft2_real;
+
+            //writeMatToFile(directional_w_s[k], std::string("directional_w_s.txt"));
+            //exit(0);
         }
 
         w_s.push_back(directional_w_s);
     }
-    */
+    std::cout << "mat in w_s is size: " << w_s[0][0].rows << ", " << w_s[0][0].cols << std::endl;
+    std::cout << "w_s size: " << w_s.size() << "*" << w_s[0].size() << std::endl;
 
-    
-    
-    //std::cout<< "x11: " << x11 << std::endl;
-    //std::cout<< "y11: " << y11 << std::endl;
-    //std::cout<< "x12: " << x12 << std::endl;
-    //std::cout<< "y12: " << y12 << std::endl;
-    //std::cout<< "F1: " << F1 << std::endl;
-    
-    
-    
-    // std::cout << "wf:" << wf << std::endl;
-    
-    //std::cout << "indexed_col rows:" << indexed_col.rows << ", cols: " << indexed_col.cols << std::endl;
-    
-    //std::cout << "temp rows:" << temp.rows << ", cols: " << temp.cols << std::endl;
-    //std::cout << "temp:" << temp << std::endl;
-    
-    //std::cout << "result rows:" << result.rows << ", cols: " << result.cols << std::endl;
-    //std::cout << "result:" << result << std::endl;
-    //Shearlet::shearing_filters_Myer(m, num, 256);
-
+    /*
     /////////////////////////////////////////
     std::vector<int> m(4, 32);
     std::vector<int> num(4, 2);
@@ -92,9 +76,9 @@ int main()
         }
         w_s.push_back(j_row);
     }
-
     //std::cout << w_s[0][0] << std::endl;
-
+    */
+    
     std::vector<std::vector<std::pair<cv::Mat, cv::Mat> > > result_shears;
     std::vector<std::vector<std::pair<cv::Mat, cv::Mat> > > dshears;
     for(int j = 0; j < num.size(); ++j)
@@ -172,23 +156,18 @@ int main()
             //       dshear{j}(:,:,k).^2 is tmp3 (tmp4 = sqrt(tmp3))
             Shearlet::complexAdd(z_real, z_img, tmp3_real, tmp3_img,
                                  z_real, z_img);
-            writeMatToFile(z_real, std::string("z_real.txt"));
-            writeMatToFile(z_img, std::string("z_img.txt"));
-            exit(0);
         }
         // pushing back place holder for k=n-1
         directional_dshears.push_back(std::pair<cv::Mat, cv::Mat>(place_holder, place_holder) ); 
-        //std::cout << "size of d"
         
-        /* 
-          processing the first and last directional_dshear pairs:
-            dshear{j}(:,:,1) = sqrt([zeros(L/2) ones(L/2); ones(L/2) zeros(L/2)].*s);
-            dshear{j}(:,:,n) = sqrt([ones(L/2) zeros(L/2); zeros(L/2) ones(L/2)].*s);
-        */
+         
+        //  processing the first and last directional_dshear pairs:
+        //    MATLAB: dshear{j}(:,:,1) = sqrt([zeros(L/2) ones(L/2); ones(L/2) zeros(L/2)].*s);
+        //    MATLAB: dshear{j}(:,:,n) = sqrt([ones(L/2) zeros(L/2); zeros(L/2) ones(L/2)].*s);
         cv::Mat s_real = cv::Mat::ones(z_real.rows, z_real.cols, CV_64F) - z_real;
         cv::Mat s_img = cv::Mat::zeros(z_img.rows, z_img.cols, CV_64F) - z_img;
-        directional_dshears[0] = std::pair<cv::Mat, cv::Mat>(s_real, s_img);
-        directional_dshears[n-1] = std::pair<cv::Mat, cv::Mat>(s_real, s_img);
+        directional_dshears[0] = std::pair<cv::Mat, cv::Mat>(s_real.clone(), s_img.clone());
+        directional_dshears[n-1] = std::pair<cv::Mat, cv::Mat>(s_real.clone(), s_img.clone());
         for(int r = 0; r < s_real.rows; ++r)
         {
             for(int c = 0; c < s_real.cols; ++c)
@@ -200,16 +179,16 @@ int main()
                     directional_dshears[0].second.at<double>(r, c) = 0;
                 }
                 // second quadrant
-                else if(c >= L/2 and r < L/2)
+                else if(c >= L/2 && r < L/2)
                 {
-                    directional_dshears[1].first.at<double>(r, c) = 0;
-                    directional_dshears[1].second.at<double>(r, c) = 0;
+                    directional_dshears[n-1].first.at<double>(r, c) = 0;
+                    directional_dshears[n-1].second.at<double>(r, c) = 0;
                 }
                 // third quadrant
-                else if(c < L/2 and r >= L/2)
+                else if(c < L/2 && r >= L/2)
                 {
-                    directional_dshears[1].first.at<double>(r, c) = 0;
-                    directional_dshears[1].second.at<double>(r, c) = 0;
+                    directional_dshears[n-1].first.at<double>(r, c) = 0;
+                    directional_dshears[n-1].second.at<double>(r, c) = 0;
                 }
                 // fourth quadrant
                 else
@@ -221,9 +200,14 @@ int main()
         }
         Shearlet::complexSqrt(directional_dshears[0].first, directional_dshears[0].second,
                               directional_dshears[0].first, directional_dshears[0].second);
-        Shearlet::complexSqrt(directional_dshears[1].first, directional_dshears[1].second,
-                              directional_dshears[1].first, directional_dshears[1].second);
+        Shearlet::complexSqrt(directional_dshears[n-1].first, directional_dshears[n-1].second,
+                              directional_dshears[n-1].first, directional_dshears[n-1].second);
         
+        //std::cout << "first: row:" << directional_dshears[0].first.rows << ", cols: " << directional_dshears[0].first.cols << std::endl;
+        //writeMatToFile(directional_dshears[0].first, std::string("first_0.txt"));
+        //writeMatToFile(directional_dshears[0].second, std::string("second_0.txt"));
+
+        //exit(0);
         // push back entire directional_dshears to dshears
         dshears.push_back(directional_dshears);
     }
