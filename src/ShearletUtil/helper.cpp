@@ -423,6 +423,7 @@ std::vector<std::vector<std::pair<cv::Mat, cv::Mat> > > shearing_filters_Myer(st
     return dshears;
 }
 
+/* complex matrix operations */ 
 cv::Mat Mat_sqrt(cv::Mat input)
 {
     input.convertTo(input, CV_64F);
