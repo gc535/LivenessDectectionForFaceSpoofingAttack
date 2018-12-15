@@ -7,16 +7,19 @@ This project is designed to distinguish between real person and fake images or v
 The current algorithm uses LBP extraction on the facial image and the Optical Flow image(adding a gray scale lbp in still in test). Multiple MLP networks are trained on their independent dataset, then their own intermediate encoded results will be  combined to generate a merged sample vector for traning a merging MLP model, where the final prediction is generated.  
 
 --------------------------
-#### Usage:
+#### Usage: (This is not a complete software, but a set of explorations of livessness detection)
+This project contains several different feature extraction methods that can be used in liveness detection. These methods were gathered different papers prior works in this area. 
+Each feature extaction is a independent program, and there is one prototype program to the feature integration as well. 
+
 ##### C++ program:
 dependency: opencv(with HDF5 module support, dnn module, ml module)
 
 ###### There will be multiple executable files generated after make the source code.
 
 ###### sperate data preparation: 
-dog_lbp, ofm, [gray, still in grogress]:
+dog_lbp, ofm, rawlbp, fft_dog [still in rogress]:
 
-These seperate MLP models need to be trained independently on three dataset. Before training the MLP, train and test data<data, labels> needs to be formated into HDF5 files. 
+Seperate MLP models need to be trained independently on each data feature. Before training the MLP, train and test data<data, labels> needs to be formated into HDF5 files. 
 For exapmle: "dog_lbp" generates the "train.h5" and "test.h5"(name can be user specified) stores the train and test data, and then trains a SVM model then output the SVM model accuracy just for comparison. The generated database files are used to independently train the DOG_LBP_MLP model.
 (The generated HDF5 files can be used to generate a MLP model by python in the /src/python/MLP folder)
 A sample program generates the dog_lbp dataset file is as follow:
@@ -27,7 +30,7 @@ $ cd {project root}/bin
 $ ./lbp -d <path-to-the-data-root-directory> [OPTIONAL: -r <resize image size>, -c <cell size for lbp feature extraction>] 
 ```
 ###### integration
-integration: loads three MLP networks trained on the LBP and Optical Flow feature [and Gray scale image], then run the inferece on individual input image to generate a "intermediate result", then stores the result into another "train.h5" and "test.h5"(name is also user spefified) files. These two files are used to trained the "merging network" (MLP as well). Training and testing code are also in the /src/python/MLP folder.
+integration: You can specify three trained MLP models to load at the begining of the program , then run the inferece on individual input image to generate a "intermediate result", then stores the result into another "train.h5" and "test.h5"(name is also user spefified) files. These two files are used to trained the "merging network" (MLP as well). Training and testing code are also in the /src/python/MLP folder.
 ```
 $ ./integration -m1 path-to-model1 -b1 path-to-model1-parameter -m2 path-to-model2 -b2 path-to-model2-parameter -m3 path-to-model3 -b3 path-to-model3-parameter -d1 path-to-data-folder -d2 path-to-data-folder -d3 path-to-data-folder -r image-resize-factor -c lbp-cell-size
 ```
@@ -98,3 +101,10 @@ update 10/29/2018:
   
 update 10/30/2018:
   1. Now integrating.cpp can loads multiple models and do the inference seperately to prepare the merged feature vector for training the merging MLP model. 
+
+update 12/12/2018:
+  1. Shearlet is a addon util for shearlet transform and feature extraction, the orignal source code is in MATLAB in this repo:
+      https://github.com/lymhust/Fig2_Fig3_Fig4-for-NR-IQA-with-Shearlet-Transform-and-DNN/blob/master/Shearlet-Transform/
+  2. This addon only a replicate of all MATLAB function and does not linked to any make rules. (The driver.cpp has no use but kept for dubugging purposes.)
+  3. Each function serves the same functionality as the MATLAB source code. See the orignal repo to see more detial.
+  4. Please cite the orignal paper and author for this addon. 
